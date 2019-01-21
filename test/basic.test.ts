@@ -1,12 +1,13 @@
-import * as Runner from '../Runner';
+import * as Runner from '../src/Runner';
 import * as path from 'path';
+import { doesNotReject } from 'assert';
 
 describe('basic', () => {
 
     it('pure-entry-task', done => {
 
-        const base = path.join(__dirname, 'content');
-        Runner.run({
+
+        const config = {
             tasks: {
                 task1: [
                     {
@@ -15,7 +16,8 @@ describe('basic', () => {
                 ],
                 task2: (runner: Runner.Runner) => [
                     {
-                        src: 'test2.txt'
+                        src: 'test2.txt',
+                        runner
                     }
                 ]
 
@@ -28,9 +30,13 @@ describe('basic', () => {
                 expect(runner.tasks.task1[0].src).toBe('test1.txt');
                 expect(runner.tasks.task2.length).toBe(1);
                 expect(runner.tasks.task2[0].src).toBe('test2.txt');
+                expect(runner.tasks.task2[0].runner).toBe(runner);
             }
 
-        }).then(runner => {
+        };
+        const runner = new Runner.Runner(config)
+        Runner.run(config, config, runner).then(runner => {
+
 
             done();
 
@@ -46,7 +52,7 @@ describe('basic', () => {
                 task1: (runner: Runner.Runner) => ({
                     input: {
                         base,
-                        src: '**/*'
+                        src: '**/*',
                     }
                 })
             },
@@ -88,6 +94,20 @@ describe('basic', () => {
 
             done();
 
+        });
+
+    });
+
+    it('load-content', done => {
+
+        const base = path.join(__dirname, 'content');
+        Promise.all(Runner.getEntries({
+                base,
+                src: '**/*'
+        })).then(entries => {
+
+            expect(entries[0].loadContent()).toBe('');
+            done();
         });
 
     });

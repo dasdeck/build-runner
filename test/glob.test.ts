@@ -1,22 +1,25 @@
 
 
-import * as Runner from '../Runner';
+import * as Runner from '../src/Runner';
 import * as path from 'path';
 
 describe('glob-path', () => {
 
-    it('evaluate-basic-glob', () => {
+    it('evaluate-basic-glob', done => {
 
         const base = path.join(__dirname, 'content');
-        const entries = Runner.getEntries({
+        Promise.all(Runner.getEntries({
                 base,
                 src: '**/*'
-        });
+        })).then(entries => {
 
-        expect(entries.length).toBe(3);
-        expect(entries[0].src).toBe('sub1/test3.txt');
-        expect(entries[1].src).toBe('test1.txt');
-        expect(entries[1].path).toBe(path.join(base, 'test1.txt'));
+
+            expect(entries.length).toBe(3);
+            expect(entries[0].src).toBe('sub1/test3.txt');
+            expect(entries[1].src).toBe('test1.txt');
+            expect(entries[1].path).toBe(path.join(base, 'test1.txt'));
+            done();
+        });
 
     });
 

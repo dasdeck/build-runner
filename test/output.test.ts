@@ -1,4 +1,4 @@
-import * as Runner from '../Runner';
+import * as Runner from '../src/Runner';
 import * as path from 'path';
 
 describe('output', () => {
@@ -13,7 +13,7 @@ describe('output', () => {
                 filter: (entry: Runner.Entry) => new Promise(res => res(entry))
             },
             output: (entries:Runner.Entry[]) => entries.filter((entry: Runner.Entry) => !entry.src || !entry.src.includes('sub1'))
-        }).then((entries: Runner.Entry[]) => {
+        }).then((entries: any[]) => {
 
             expect(entries.length).toBe(2);
             expect(entries[0].src).toBe('test1.txt');
