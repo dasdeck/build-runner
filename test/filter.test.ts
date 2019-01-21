@@ -19,6 +19,19 @@ describe('filter', () => {
 
     });
 
+    it('ensure-entry-objects-after-filter', done => {
+        Runner.filterInput({
+            base: path.join(__dirname, 'content'),
+            src: 'test1.txt',
+            filter: (entry: Runner.Entry) => ({...entry, src: 'renamed.txt'})
+        }).then((entries: Runner.Entry[]) => {
+
+            expect(entries[0]).toBeInstanceOf(Runner.Entry);
+            done();
+
+        });
+    });
+
     it('filter-change-name', done => {
 
         Runner.filterInput({

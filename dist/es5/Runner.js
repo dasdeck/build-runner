@@ -16,6 +16,13 @@ var Entry = /** @class */ (function () {
     function Entry(data) {
         Object.assign(this, data);
     }
+    Object.defineProperty(Entry.prototype, "target", {
+        get: function () {
+            return path.join(this.dest || '', this.src || '');
+        },
+        enumerable: true,
+        configurable: true
+    });
     Entry.prototype.loadContent = function (encoding) {
         if (encoding === void 0) { encoding = 'utf8'; }
         if (this.path && fs.existsSync(this.path)) {
@@ -38,28 +45,48 @@ var Runner = /** @class */ (function () {
     return Runner;
 }());
 exports.Runner = Runner;
-function globSources(src, config, base) {
-    if (base === void 0) { base = ''; }
-    if (src.indexOf('http') === 0) {
-        return [request(src, { encoding: null }).then(function (content) { return new Entry({ content: content }); })];
+var pathResolvers = [
+    function (src, input, task) {
+        if (src.indexOf('http') === 0) {
+            return [request(src, { encoding: null }).then(function (content) { return ({ content: content }); })];
+        }
+    },
+    function (src, input, task) {
+        var base = input.base || task.base || '';
+        var ignore = input.ignore instanceof Array ? input.ignore : (input.ignore && [input.ignore]);
+        return glob.sync(src, { ignore: ignore, nodir: true, cwd: base }).map(function (src) { return ({ src: src, path: path.join(base, src) }); });
     }
-    else {
-        return glob.sync(src, __assign({}, config, { nodir: true, cwd: base })).map(function (src) { return new Entry({ src: src, path: path.join(base, src) }); });
+];
+function resolvePath(src, input, task) {
+    var _loop_1 = function (i) {
+        var resolver_1 = pathResolvers[i];
+        var res = resolver_1(src, input, task);
+        if (res) {
+            var base_1 = input.base || task.base;
+            var dest_1 = input.dest || task.dest;
+            return { value: res.map(function (data) { return data instanceof Promise ?
+                    data.then(function (data) { return new Entry(__assign({ src: src, base: base_1, dest: dest_1 }, data)); }) :
+                    new Entry(__assign({ src: src, base: base_1, dest: dest_1 }, data)); }) };
+        }
+    };
+    for (var i in pathResolvers) {
+        var state_1 = _loop_1(i);
+        if (typeof state_1 === "object")
+            return state_1.value;
     }
+    return [];
 }
 function getEntries(input, task) {
     if (task === void 0) { task = {}; }
     if (typeof input === 'string') {
-        return globSources(input, {}, task.base);
+        return resolvePath(input, {}, task);
     }
     else if (input instanceof Array) {
         return input.reduce(function (res, input) { return res.concat(getEntries(input, task)); }, []);
     }
     else {
-        var base_1 = input.base || task.base || '';
-        var src = input.src instanceof Array ? input.src : [input.src];
-        var ignore_1 = input.ignore instanceof Array ? input.ignore : (input.ignore && [input.ignore]);
-        return src.reduce(function (res, src) { return res.concat(globSources(src, { ignore: ignore_1 }, base_1)); }, []);
+        var src = input.src ? (input.src instanceof Array ? input.src : [input.src]) : [];
+        return src.reduce(function (res, src) { return res.concat(resolvePath(src, input, task)); }, []);
     }
 }
 exports.getEntries = getEntries;
@@ -72,7 +99,8 @@ function filterInput(input, task, runner) {
 exports.filterInput = filterInput;
 function resolver(promises, parallel) {
     if (parallel) {
-        return Promise.all(promises.map(function (f) { return f(); }));
+        var unwrapped = promises.map(function (f) { return f(); });
+        return Promise.all(unwrapped);
     }
     else {
         return promises.reduce(function (current, next) { return current.then(next); }, Promise.resolve());
@@ -94,7 +122,7 @@ function logEntries(entries, runner, name) {
 }
 function processEntries(entries, task, runner) {
     if (task.output) {
-        var res = task.output(entries, runner);
+        var res = task.output(entries, runner, task);
         if (typeof res === 'undefined') {
             return entries;
         }
@@ -117,6 +145,14 @@ function filterEntries(entries, input, task, runner) {
             if (typeof res === 'undefined') {
                 return entry;
             }
+            else if (typeof res === 'object') {
+                if (!(res instanceof Promise) && !(res instanceof Entry)) {
+                    return new Entry(res);
+                }
+                else {
+                    return res;
+                }
+            }
             else {
                 return res;
             }
@@ -128,6 +164,9 @@ function filterEntries(entries, input, task, runner) {
 }
 function evaluateEntries(entries, task, runner, name) {
     return Promise.all(entries).then(function (entries) { return processEntries(entries, task, runner); }).then(function (entries) {
+        if (entries.find(function (entry) { return entry instanceof Promise; })) {
+            throw 'entry should be resoved before logging';
+        }
         logEntries(entries, runner, name);
         return entries;
     });
@@ -135,7 +174,7 @@ function evaluateEntries(entries, task, runner, name) {
 function evaluateTask(task, runner, name) {
     if (runner === void 0) { runner = new Runner; }
     if (task instanceof Array) {
-        return evaluateEntries(task, task, runner, name);
+        return evaluateEntries(task, {}, runner, name);
     }
     else if (task instanceof Function) {
         return Promise.resolve(task(runner)).then(function (res) { return res && evaluateTask(res, runner, name); });

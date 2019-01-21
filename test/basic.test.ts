@@ -30,12 +30,12 @@ describe('basic', () => {
                 expect(runner.tasks.task1[0].src).toBe('test1.txt');
                 expect(runner.tasks.task2.length).toBe(1);
                 expect(runner.tasks.task2[0].src).toBe('test2.txt');
-                expect(runner.tasks.task2[0].runner).toBe(runner);
+                expect((<any>runner.tasks.task2[0]).runner).toBe(runner);
             }
 
         };
         const runner = new Runner.Runner(config)
-        Runner.run(config, config, runner).then(runner => {
+        runner.run().then(runner => {
 
 
             done();

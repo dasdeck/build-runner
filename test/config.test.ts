@@ -12,7 +12,7 @@ describe('config', () => {
         const runner = new Runner(config);
 
         runner.run().then(runner => {
-            expect(runner.tasks.test[0].config).toBe(runner.config);
+            expect((<any>runner.tasks.test[0]).config).toBe(runner.config);
             done();
         })
 

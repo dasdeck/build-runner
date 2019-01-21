@@ -37,5 +37,24 @@ describe('basic', () => {
 
     });
 
+    it('destination', done => {
+
+        const base = path.join(__dirname, 'content');
+        Runner.run({
+            base,
+            input: {
+                src: 'test1.txt',
+                dest: 'dest'
+            }
+        }).then(runner => {
+
+            expect(runner.tasks._root[0].src).toBe('test1.txt')
+            expect(runner.tasks._root[0].dest).toBe('dest')
+            done();
+
+        });
+
+    });
+
 });
 
