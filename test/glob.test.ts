@@ -8,10 +8,10 @@ describe('glob-path', () => {
     it('evaluate-basic-glob', done => {
 
         const base = path.join(__dirname, 'content');
-        Promise.all(Runner.getEntries({
+        Runner.getEntries({
                 base,
                 src: '**/*'
-        })).then(entries => {
+        }).then(entries => {
 
 
             expect(entries.length).toBe(3);
@@ -23,38 +23,41 @@ describe('glob-path', () => {
 
     });
 
-    it('evaluate-multi-glob', () => {
+    it('evaluate-multi-glob', done => {
 
-        const entries = Runner.getEntries({
+        Runner.getEntries({
                 base: path.join(__dirname, 'content'),
                 src: [
                     '*.txt',
                     'sub1/*.txt'
                 ]
-        });
+        }).then(entries => {
 
-        expect(entries.length).toBe(3);
+            expect(entries.length).toBe(3);
+            done();
+        });
 
     });
 
-    it('evaluate-multi-glob-ignore', () => {
+    it('evaluate-multi-glob-ignore', done => {
 
-        const entries = Runner.getEntries({
+        Runner.getEntries({
                 base: path.join(__dirname, 'content'),
                 src: [
                     '*.txt',
                     'sub1/*.txt'
                 ],
                 ignore: 'test1.txt'
-        });
-
-        expect(entries.length).toBe(2);
+        }).then(entries => {
+            expect(entries.length).toBe(2);
+            done();
+        })
 
     });
 
-    it('evaluate-multi-glob-multi-ignore', () => {
+    it('evaluate-multi-glob-multi-ignore', done => {
 
-        const entries = Runner.getEntries({
+        Runner.getEntries({
                 base: path.join(__dirname, 'content'),
                 src: [
                     '*.txt',
@@ -64,9 +67,12 @@ describe('glob-path', () => {
                     'test1.txt',
                     'test2.txt'
                 ]
-        });
+        }).then(entries => {
 
-        expect(entries.length).toBe(1);
+            expect(entries.length).toBe(1);
+            done();
+
+        });
 
     });
 

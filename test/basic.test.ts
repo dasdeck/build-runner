@@ -1,11 +1,12 @@
 import * as Runner from '../src/Runner';
 import * as path from 'path';
-import { doesNotReject } from 'assert';
 
 describe('basic', () => {
 
+    /**
+     * directly return an array of file entries from task entry
+     */
     it('pure-entry-task', done => {
-
 
         const config = {
             tasks: {
@@ -27,6 +28,7 @@ describe('basic', () => {
 
                 expect(runner).toBeDefined();
                 expect(runner.tasks.task1.length).toBe(1);
+                expect(runner.tasks.task1[0]).toBeInstanceOf(Runner.Entry);
                 expect(runner.tasks.task1[0].src).toBe('test1.txt');
                 expect(runner.tasks.task2.length).toBe(1);
                 expect(runner.tasks.task2[0].src).toBe('test2.txt');
@@ -44,6 +46,9 @@ describe('basic', () => {
 
     });
 
+    /**
+     * return a dynamic task json from a function
+     */
     it('dynamic-task', done => {
 
         const base = path.join(__dirname, 'content');
@@ -71,6 +76,9 @@ describe('basic', () => {
 
     });
 
+    /**
+     * return a task via a promise
+     */
     it('function-task-promise', done => {
 
         const base = path.join(__dirname, 'content');
@@ -98,19 +106,24 @@ describe('basic', () => {
 
     });
 
-    it('load-content', done => {
+    /**
+     * return nothing in task promise
+     */
+    it ('no-return-task', done => {
 
-        const base = path.join(__dirname, 'content');
-        Promise.all(Runner.getEntries({
-                base,
-                src: '**/*'
-        })).then(entries => {
+        const runner = new Runner.Runner({
+            tasks: {
+                test: () => Promise.resolve()
+            }
+        });
 
-            expect(entries[0].loadContent()).toBe('');
+        runner.run().then(() => {
             done();
         });
 
     });
+
+
 
 });
 

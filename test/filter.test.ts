@@ -4,7 +4,7 @@ import * as path from 'path';
 
 describe('filter', () => {
 
-    it('filter-promised-result', done => {
+    it('promised-filter-result', done => {
 
         Runner.filterInput({
             base: path.join(__dirname, 'content'),
@@ -19,7 +19,7 @@ describe('filter', () => {
 
     });
 
-    it('ensure-entry-objects-after-filter', done => {
+    it('ensure-entry-objects-after-filtering', done => {
         Runner.filterInput({
             base: path.join(__dirname, 'content'),
             src: 'test1.txt',
@@ -32,7 +32,7 @@ describe('filter', () => {
         });
     });
 
-    it('filter-change-name', done => {
+    it('change-name', done => {
 
         Runner.filterInput({
             base: path.join(__dirname, 'content'),
@@ -60,7 +60,7 @@ describe('filter', () => {
         });
     });
 
-    it('shared-fiter', done => {
+    it('task-filter', done => {
         Runner.run({
             input: {
                 base: path.join(__dirname, 'content'),

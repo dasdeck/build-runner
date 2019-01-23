@@ -2,6 +2,9 @@ import {Runner, run} from '../src/Runner';
 
 describe('config', () => {
 
+    /**
+     * ensure that the runner carries the config
+     */
     it('access-config-in-task-callback', done => {
 
         const config = {

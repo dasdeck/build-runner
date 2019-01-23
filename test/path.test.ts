@@ -22,20 +22,6 @@ describe('basic', () => {
 
     });
 
-    it('string-input', done => {
-
-        const base = path.join(__dirname, 'content');
-        Runner.run({
-            base,
-            input: 'test1.txt'
-        }).then(runner => {
-
-            expect(runner.tasks._root[0].src).toBe('test1.txt')
-            done();
-
-        });
-
-    });
 
     it('destination', done => {
 
@@ -50,6 +36,21 @@ describe('basic', () => {
 
             expect(runner.tasks._root[0].src).toBe('test1.txt')
             expect(runner.tasks._root[0].dest).toBe('dest')
+            done();
+
+        });
+
+    });
+
+    it('always have valid target', done => {
+
+        const base = path.join(__dirname, 'content');
+        Runner.run({
+            base,
+            input: 'test1.txt'
+        }).then(runner => {
+
+            expect(runner.tasks._root[0].target).toBe('test1.txt')
             done();
 
         });

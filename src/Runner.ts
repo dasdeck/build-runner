@@ -1,38 +1,19 @@
 import * as glob from 'glob';
 import * as path from 'path';
-import * as fs from 'fs';
 import * as request from 'request-promise-native';
+import {resolver} from './util';
+import Entry from './Entry';
 
-class Entry {
-
-    path?: string
-    src?: string
-    content?: string|Buffer
-    dest?:string
-
-    constructor(data: object) {
-        Object.assign(this, data);
-    }
-
-    get target(): string {
-        return path.join(this.dest || '', this.src || '');
-    }
-
-    loadContent(encoding = 'utf8'): string | Buffer | void {
-        if (this.path && fs.existsSync(this.path)) {
-            this.content = fs.readFileSync(this.path, encoding);
-            return this.content
-        }
-    }
-}
-
-type EntrySet = (Entry | Promise<Entry>)[];
+type EntrySet = Entry[];
+type PromisedEntries = Promise<EntrySet>
 type ResolvedEntrySet = Entry[];
 type OneOrMore<T> = T | T[];
 type TaskLike = Task | Function | any[];
-type TaskList = { [s: string]: TaskLike; }
-
-class Runner {
+type TaskList = { [s: string]: TaskLike; };
+type EntryLike = object|Entry;
+type EntryResult = EntryLike | boolean | void;
+type PromisedEntryResult = Promise<EntryResult>;
+export default class Runner {
     tasks: { [s: string]: ResolvedEntrySet; } = {}
     config: Task
 
@@ -45,9 +26,8 @@ class Runner {
     }
 }
 
-interface LazyPrimise<T=any> {():Promise<T>}
-interface Filter {(entry: Entry, runner: Runner):object|Entry|boolean|undefined|Promise<Entry|boolean|void>}
-interface Output {(entries: ResolvedEntrySet, runner: Runner, task: Task):EntrySet|Promise<EntrySet>|void}
+interface Filter {(entry: Entry, runner: Runner):EntryResult|PromisedEntryResult}
+interface Output {(entries: EntrySet, runner: Runner, task: Task):EntryLike[] | Promise<EntryLike[]> | void | boolean}
 
 interface Input {
     src?:OneOrMore<string>,
@@ -75,7 +55,9 @@ const pathResolvers = [
 
     (src: string, input: Input, task: Task): object[]|void => {
         if (src.indexOf('http') === 0) {
-            return [request(src, {encoding: null}).then((content:string|Buffer) => ({content}))]
+            return [request(src, {encoding: null}).then((content:string|Buffer) => {
+                return {content};
+            })]
         }
     },
 
@@ -86,25 +68,24 @@ const pathResolvers = [
     }
 ]
 
-function resolvePath(src: string, input: Input, task: Task): EntrySet {
+function resolvePath(src: string, input: Input, task: Task): PromisedEntries {
 
     for (const i in pathResolvers) {
         const resolver = pathResolvers[i];
         const res = resolver(src, input, task);
+
         if (res) {
             const base = input.base || task.base;
             const dest = input.dest || task.dest;
-            return res.map(data => data instanceof Promise ?
-                data.then(data => new Entry({src, base, dest, ...data})) :
-                new Entry({src, base, dest, ...data}));
+            return Promise.resolve(res).then(res => Promise.all(res)).then(res => res.map(data => new Entry({src, base, dest, ...data})));
         }
     }
 
-    return [];
+    return Promise.resolve([]);
 
 }
 
-function getEntries(input: InputLike, task: Task = {}): EntrySet {
+function getEntries(input: InputLike, task: Task = {}): PromisedEntries {
 
         if (typeof input === 'string') {
 
@@ -112,38 +93,29 @@ function getEntries(input: InputLike, task: Task = {}): EntrySet {
 
         } else if (input instanceof Array) {
 
-            return input.reduce((res: EntrySet, input: InputLike) => res.concat(getEntries(input, task)), []);
+             return Promise.all(input.map((input: InputLike) => getEntries(input, task))).then(sets => sets.reduce((res, set) => res.concat(set)));
 
         } else {
 
             const src: string[] = input.src ? (input.src instanceof Array ? input.src : [input.src]) : [];
-            return src.reduce((res: EntrySet, src: string) => res.concat(resolvePath(src, input, task)), []);
+            return Promise.all(src.map(src => resolvePath(src, input, task))).then(sets => sets.reduce((res, set) => res.concat(set)))
 
         }
 
 }
 
-function filterInput(input: InputLike, task: Task = {}, runner: Runner = new Runner):Promise<ResolvedEntrySet> {
+function filterInput(input: InputLike, task: Task = {}, runner: Runner = new Runner):PromisedEntries {
     const entries = getEntries(input, task);
     return filterEntries(entries, input, task, runner);
 
 }
 
-function resolver(promises: LazyPrimise[], parallel?:boolean):Promise<any> {
 
-    if (parallel) {
-        const unwrapped = promises.map(f => f());
-        return Promise.all(unwrapped);
-    } else {
-        return promises.reduce((current, next) => current.then(next), Promise.resolve())
-    }
-}
-
-function resolveTasks(tasks?: TaskList, runner?: Runner, name?:string, parallel:boolean = false): Promise<void> {
+function resolveTasks(tasks?: TaskList, runner?: Runner, name?:string, parallel:boolean = false): PromisedEntries {
     if (tasks) {
         return resolver(Object.keys(tasks).map(name => () => evaluateTask(tasks[name], runner, name)), parallel)
     } else {
-        return Promise.resolve();
+        return Promise.resolve([]);
     }
 }
 
@@ -152,56 +124,50 @@ function logEntries(entries: ResolvedEntrySet, runner: Runner, name?: string): v
     runner.tasks[name] = entries;
 }
 
-function processEntries(entries: ResolvedEntrySet, task: Task, runner: Runner): EntrySet|Promise<EntrySet> {
+function processEntries(entries: ResolvedEntrySet, task: Task, runner: Runner): PromisedEntries {
     if (task.output) {
         const res = task.output(entries, runner, task);
-        if (typeof res === 'undefined') {
-            return entries;
+        if (res === true || typeof res === 'undefined') {
+            return Promise.resolve(entries);
+        } else if(res) {
+            return Promise.resolve(res).then(res => <Entry[]>res.map(Entry.forceEntry).filter(v => v));
         } else {
-            return res;
+            return Promise.resolve([]);
         }
     } else {
-        return entries
+        return Promise.resolve(entries);
     }
 }
 
-function filterEntries(entries: EntrySet, input:InputLike, task: Task, runner:Runner):Promise<ResolvedEntrySet> {
+function filterEntries(entries: PromisedEntries, input:InputLike, task: Task, runner:Runner):PromisedEntries {
 
-    if (typeof input === 'string') {
-        return Promise.all(entries);
-    }
+    const filter = typeof input !== 'string' && input.filter || task.filter;
 
-    return <Promise<ResolvedEntrySet>>Promise.all(entries).then(entries => Promise.all(entries.map(entry => {
+    if (filter) {
 
-        const filter = input.filter || task.filter;
-        if (filter) {
+        return <PromisedEntries>Promise.resolve(entries).then(entries => Promise.all(entries.map(entry => {
+
             const res = filter(entry, runner);
 
-            if(typeof res === 'undefined') {
+            if (res === true || typeof res === 'undefined') {
                 return entry;
-            } else if (typeof res === 'object') {
-                if (!(res instanceof Promise) && !(res instanceof Entry)) {
-                    return new Entry(res);
-                } else {
-                    return res;
-                }
-            } else {
-                return res;
+            } else if (res) {
+                return Promise.resolve(res).then(Entry.forceEntry);
             }
 
-        } else {
-            return entry;
-        }
+        })).then(res => res.filter(v => v)));
 
-    }).filter(v => v)));
+    } else {
+        return entries;
+    }
 
 }
 
-function evaluateEntries(entries: EntrySet, task:Task, runner:Runner, name?: string):Promise<EntrySet> {
+function evaluateEntries(entries: EntrySet, task:Task, runner:Runner, name?: string):PromisedEntries {
     return Promise.all(entries).then(entries => processEntries(entries, task, runner)).then((entries: any[]) => {
 
         if(entries.find(entry => entry instanceof Promise)) {
-            throw 'entry should be resoved before logging';
+            throw 'entry should be resolved before logging';
         }
 
         logEntries(entries, runner, name);
@@ -209,10 +175,10 @@ function evaluateEntries(entries: EntrySet, task:Task, runner:Runner, name?: str
     });
 }
 
-function evaluateTask(task: TaskLike, runner: Runner = new Runner, name?:string):Promise<EntrySet> {
+function evaluateTask(task: TaskLike, runner: Runner = new Runner, name?:string):PromisedEntries {
 
     if (task instanceof Array) {
-        return evaluateEntries(task, {}, runner, name);
+        return evaluateEntries(task.map(data => new Entry(data)), {}, runner, name);
 
     } else if (task instanceof Function) {
         return Promise.resolve(task(runner)).then(res => res && evaluateTask(res, runner, name));
