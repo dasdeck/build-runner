@@ -1,11 +1,13 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
+declare class Zip {};
+type Content = string|Buffer|Zip;
 export default class Entry {
 
     path?: string
     src?: string
-    content?: string|Buffer
+    content?: Content
     dest?:string
 
     constructor(data: object) {
@@ -28,7 +30,7 @@ export default class Entry {
         }
     }
 
-    loadContent(encoding = 'utf8'): string | Buffer | void {
+    loadContent(encoding = 'utf8'): Content | void {
         if (this.path && fs.existsSync(this.path)) {
             this.content = fs.readFileSync(this.path, encoding);
             return this.content
