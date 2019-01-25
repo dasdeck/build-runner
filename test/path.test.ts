@@ -34,8 +34,7 @@ describe('basic', () => {
             }
         }).then(runner => {
 
-            expect(runner.tasks._root[0].src).toBe('test1.txt')
-            expect(runner.tasks._root[0].dest).toBe('dest')
+            expect(runner.tasks._root[0].dest).toBe('dest/test1.txt')
             done();
 
         });
@@ -50,7 +49,7 @@ describe('basic', () => {
             input: 'test1.txt'
         }).then(runner => {
 
-            expect(runner.tasks._root[0].target).toBe('test1.txt')
+            expect(runner.tasks._root[0].dest).toBe('test1.txt')
             done();
 
         });

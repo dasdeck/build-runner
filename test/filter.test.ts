@@ -12,7 +12,7 @@ describe('filter', () => {
             filter: (entry: Runner.Entry) => new Promise(res => res(entry))
         }).then((entries: Runner.Entry[]) => {
 
-            expect(entries[0].src).toBe('test1.txt');
+            expect(entries[0].dest).toBe('test1.txt');
             done();
 
         });
@@ -37,10 +37,10 @@ describe('filter', () => {
         Runner.filterInput({
             base: path.join(__dirname, 'content'),
             src: 'test1.txt',
-            filter: (entry: Runner.Entry) => new Runner.Entry({...entry, src: 'renamed.txt'})
+            filter: (entry: Runner.Entry) => new Runner.Entry({...entry, dest: 'renamed.txt'})
         }).then((entries: Runner.Entry[]) => {
 
-            expect(entries[0].src).toBe('renamed.txt');
+            expect(entries[0].dest).toBe('renamed.txt');
             done();
 
         });
@@ -69,7 +69,7 @@ describe('filter', () => {
                     'test2.txt'
                 ]
             },
-            filter: (entry: Runner.Entry) => entry.src == 'test1.txt'
+            filter: (entry: Runner.Entry) => entry.dest == 'test1.txt'
         }).then((runner: Runner.Runner) => {
 
             expect(runner.tasks._root.length).toBe(1);

@@ -25,7 +25,7 @@ describe('input', () => {
             input: 'test1.txt'
         }).then(runner => {
 
-            expect(runner.tasks._root[0].src).toBe('test1.txt')
+            expect(runner.tasks._root[0].dest).toBe('test1.txt')
             done();
 
         });

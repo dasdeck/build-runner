@@ -2,7 +2,7 @@ import * as glob from 'glob';
 import * as path from 'path';
 import * as request from 'request-promise-native';
 import {resolver} from './util';
-import Entry from './Entry';
+import Entry, {EntryLike} from './Entry';
 
 type EntrySet = Entry[];
 type PromisedEntries = Promise<EntrySet>
@@ -10,7 +10,6 @@ type ResolvedEntrySet = Entry[];
 type OneOrMore<T> = T | T[];
 type TaskLike = Task | Function | any[];
 type TaskList = { [s: string]: TaskLike; };
-type EntryLike = object|Entry;
 type EntryResult = EntryLike | boolean | void;
 type PromisedEntryResult = Promise<EntryResult>;
 export default class Runner {
@@ -53,18 +52,18 @@ interface Task {
 
 const pathResolvers = [
 
-    (src: string, input: Input, task: Task): object[]|void => {
+    (src: string, input: Input, task: Task): PromisedEntryResult[]|void => {
         if (src.indexOf('http') === 0) {
             return [request(src, {encoding: null}).then((content:string|Buffer) => {
-                return {content};
+                return {content, src};
             })]
         }
     },
 
-    (src: string, input: Input, task: Task): object[] => {
+    (src: string, input: Input, task: Task): EntryResult[] => {
         const base = input.base || task.base || '';
         const ignore = input.ignore instanceof Array ? input.ignore : (input.ignore && [input.ignore]);
-        return glob.sync(src, {ignore, nodir: true, cwd: base}).map(src => ({src, path: path.join(base, src)}));
+        return glob.sync(src, {ignore, nodir: true, cwd: base}).map(dest => ({dest, src: path.join(base, dest)}));
     }
 ]
 
@@ -77,7 +76,7 @@ function resolvePath(src: string, input: Input, task: Task): PromisedEntries {
         if (res) {
             const base = input.base || task.base;
             const dest = input.dest || task.dest;
-            return Promise.resolve(res).then(res => Promise.all(res)).then(res => res.map(data => new Entry({src, base, dest, ...data})));
+            return Promise.resolve(res).then(res => Promise.all(res)).then(res => res.map((data: any) => new Entry(data).inDest(dest)));
         }
     }
 

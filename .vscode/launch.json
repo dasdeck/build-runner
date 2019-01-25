@@ -11,6 +11,17 @@
             "program": "${workspaceFolder}/node_modules/.bin/jest",
             "args":
                 [
+                    "--runInBand"
+                ]
+
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Selected Jest",
+            "program": "${workspaceFolder}/node_modules/.bin/jest",
+            "args":
+                [
                     "--runInBand",
                     "--testNamePattern",
                     "${selectedText}"

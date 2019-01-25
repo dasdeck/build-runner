@@ -15,14 +15,14 @@ export default class Zip {
     entries: {[s: string]: Entry} = {}
 
     setEntry(entry: Entry, replace = true) {
-        if (!entry.target) {
+        if (!entry.dest) {
             throw 'entries need a target!';
         }
 
-        if (!replace && this.entries[entry.target]) {
+        if (!replace && this.entries[entry.dest]) {
             throw "entry already assigned";
         }
-        this.entries[entry.target] = entry;
+        this.entries[entry.dest] = entry;
     }
 
     setEntries(entries: Entry[]) {
@@ -40,20 +40,20 @@ export default class Zip {
             if (entry.content) {
 
                 if (entry.content instanceof Buffer) {
-                    zip.addFile(entry.target, entry.content);
+                    zip.addFile(entry.dest, entry.content);
                 } else if (entry.content instanceof Zip) {
-                    zip.addFile(entry.target, entry.content.toAdm().toBuffer());
+                    zip.addFile(entry.dest, entry.content.toAdm().toBuffer());
                 } else if (typeof entry.content === 'string') {
-                    zip.addFile(entry.target, Buffer.from(entry.content));
+                    zip.addFile(entry.dest, Buffer.from(entry.content));
                 }
 
-            } else if (entry.path) {
+            } else if (entry.src) {
 
-                if (path.basename(entry.path) !== path.basename(entry.target)) {
+                if (path.basename(entry.src) !== path.basename(entry.dest)) {
                     // write content manually to account for renamed entry
-                    zip.addFile(entry.target, fs.readFileSync(entry.path));
+                    zip.addFile(entry.dest, fs.readFileSync(entry.src));
                 } else {
-                    zip.addLocalFile(entry.path, path.dirname(entry.target));
+                    zip.addLocalFile(entry.src, path.dirname(entry.dest));
                 }
 
             }

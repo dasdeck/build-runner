@@ -25,8 +25,8 @@ describe('tasklist', () => {
             output: (entries: Runner.Entry[], runner: Runner.Runner) => {
 
                 expect(runner).toBeDefined();
-                expect(runner.tasks.task1[0].src).toBe('test1.txt')
-                expect(runner.tasks.task2[0].src).toBe('test2.txt')
+                expect(runner.tasks.task1[0].dest).toBe('test1.txt')
+                expect(runner.tasks.task2[0].dest).toBe('test2.txt')
             }
 
         }).then(runner => {

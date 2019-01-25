@@ -29,9 +29,9 @@ describe('basic', () => {
                 expect(runner).toBeDefined();
                 expect(runner.tasks.task1.length).toBe(1);
                 expect(runner.tasks.task1[0]).toBeInstanceOf(Runner.Entry);
-                expect(runner.tasks.task1[0].src).toBe('test1.txt');
+                expect(runner.tasks.task1[0].dest).toBe('test1.txt');
                 expect(runner.tasks.task2.length).toBe(1);
-                expect(runner.tasks.task2[0].src).toBe('test2.txt');
+                expect(runner.tasks.task2[0].dest).toBe('test2.txt');
                 expect((<any>runner.tasks.task2[0]).runner).toBe(runner);
             }
 
@@ -65,7 +65,7 @@ describe('basic', () => {
 
                 expect(runner).toBeDefined();
                 expect(runner.tasks.task1.length).toBe(3)
-                expect(runner.tasks.task1[2].src).toBe('test2.txt')
+                expect(runner.tasks.task1[2].dest).toBe('test2.txt')
             }
 
         }).then(runner => {
@@ -95,7 +95,7 @@ describe('basic', () => {
 
                 expect(runner).toBeDefined();
                 expect(runner.tasks.task1.length).toBe(3)
-                expect(runner.tasks.task1[2].src).toBe('test2.txt')
+                expect(runner.tasks.task1[2].dest).toBe('test2.txt')
             }
 
         }).then(runner => {

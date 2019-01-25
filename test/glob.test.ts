@@ -15,9 +15,9 @@ describe('glob-path', () => {
 
 
             expect(entries.length).toBe(3);
-            expect(entries[0].src).toBe('sub1/test3.txt');
-            expect(entries[1].src).toBe('test1.txt');
-            expect(entries[1].path).toBe(path.join(base, 'test1.txt'));
+            expect(entries[0].dest).toBe('sub1/test3.txt');
+            expect(entries[1].dest).toBe('test1.txt');
+            expect(entries[1].src).toBe(path.join(base, 'test1.txt'));
             done();
         });
 

@@ -12,12 +12,12 @@ describe('output', () => {
                 src: '**/*',
                 filter: (entry: Runner.Entry) => new Promise(res => res(entry))
             },
-            output: (entries:Runner.Entry[]) => entries.filter((entry: Runner.Entry) => !entry.src || !entry.src.includes('sub1'))
+            output: (entries:Runner.Entry[]) => entries.filter((entry: Runner.Entry) => !entry.dest || !entry.dest.includes('sub1'))
         }).then((entries: any[]) => {
 
             expect(entries.length).toBe(2);
-            expect(entries[0].src).toBe('test1.txt');
-            expect(entries[0].path).toBe(path.join(base, 'test1.txt'));
+            expect(entries[0].dest).toBe('test1.txt');
+            expect(entries[0].src).toBe(path.join(base, 'test1.txt'));
             done();
         });
 
@@ -31,7 +31,7 @@ describe('output', () => {
                 base,
                 src: '**/*'
             },
-            output: (entries:Runner.Entry[]) => [{src: 'test'}]
+            output: (entries:Runner.Entry[]) => [{content: 'cont', dest: 'test'}]
         }).then((entries: any[]) => {
 
             expect(entries[0]).toBeInstanceOf(Runner.Entry);
@@ -41,12 +41,5 @@ describe('output', () => {
         done();
 
     });
-
-    it('promise-entries-in-output', done => {
-
-        done();
-
-    });
-
 
 });
