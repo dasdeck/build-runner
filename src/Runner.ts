@@ -76,7 +76,9 @@ function resolvePath(src: string, input: Input, task: Task): PromisedEntries {
         if (res) {
             const base = input.base || task.base;
             const dest = input.dest || task.dest;
-            return Promise.resolve(res).then(res => Promise.all(res)).then(res => res.map((data: any) => new Entry(data).inDest(dest)));
+            return Promise.resolve(res).then(res => Promise.all(res)).then(res => res.map((data: any) => new Entry(data).inDest(dest))).catch(err => {
+                throw `error in task ${task.name}.input : ${err}`;
+            });
         }
     }
 
@@ -124,18 +126,29 @@ function logEntries(entries: ResolvedEntrySet, runner: Runner, name?: string): v
 }
 
 function processEntries(entries: ResolvedEntrySet, task: Task, runner: Runner): PromisedEntries {
-    if (task.output) {
-        const res = task.output(entries, runner, task);
-        if (res === true || typeof res === 'undefined') {
-            return Promise.resolve(entries);
-        } else if(res) {
-            return Promise.resolve(res).then(res => <Entry[]>res.map(Entry.forceEntry).filter(v => v));
+
+    return Promise.resolve(entries).then(entries => {
+
+
+        if (task.output) {
+
+            const res = task.output(entries, runner, task);
+
+            if (res === true || typeof res === 'undefined') {
+                return entries;
+            } else if(res) {
+                return Promise.resolve(res).then(res => <Entry[]>res.map(Entry.forceEntry).filter(v => v));
+            } else {
+                return [];
+            }
         } else {
-            return Promise.resolve([]);
+            return entries;
         }
-    } else {
-        return Promise.resolve(entries);
-    }
+    }).catch(err => {
+
+        throw `Error in task ${task.name}.output : ${err}`;
+
+    })
 }
 
 function filterEntries(entries: PromisedEntries, input:InputLike, task: Task, runner:Runner):PromisedEntries {
@@ -154,7 +167,9 @@ function filterEntries(entries: PromisedEntries, input:InputLike, task: Task, ru
                 return Promise.resolve(res).then(Entry.forceEntry);
             }
 
-        })).then(res => res.filter(v => v)));
+        })).then(res => res.filter(v => v))).catch(err => {
+            throw `Error in task ${task.name}.filter`
+        });
 
     } else {
         return entries;
@@ -176,11 +191,16 @@ function evaluateEntries(entries: EntrySet, task:Task, runner:Runner, name?: str
 
 function evaluateTask(task: TaskLike, runner: Runner = new Runner, name?:string):PromisedEntries {
 
+
     if (task instanceof Array) {
         return evaluateEntries(task.map(data => new Entry(data)), {}, runner, name);
 
     } else if (task instanceof Function) {
         return Promise.resolve(task(runner)).then(res => res && evaluateTask(res, runner, name));
+    } else {
+
+        task.name = task.name || name || '_root';
+
     }
 
 

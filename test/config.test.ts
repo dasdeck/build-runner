@@ -1,4 +1,4 @@
-import {Runner, run} from '../src/Runner';
+import {Runner} from '../src/Runner';
 
 describe('config', () => {
 
