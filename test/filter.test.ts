@@ -72,7 +72,7 @@ describe('filter', () => {
             filter: (entry: Runner.Entry) => entry.dest == 'test1.txt'
         }).then((runner: Runner.Runner) => {
 
-            expect(runner.tasks._root.length).toBe(1);
+            expect(runner.entries._root.length).toBe(1);
             done();
 
         });

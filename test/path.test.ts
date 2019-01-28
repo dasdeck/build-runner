@@ -14,7 +14,7 @@ describe('basic', () => {
             ]
         }).then(runner => {
 
-            expect(runner.tasks._root.length).toBe(2);
+            expect(runner.entries._root.length).toBe(2);
             done();
 
         });
@@ -34,7 +34,7 @@ describe('basic', () => {
             }
         }).then(runner => {
 
-            expect(runner.tasks._root[0].dest).toBe('dest/test1.txt')
+            expect(runner.entries._root[0].dest).toBe('dest/test1.txt')
             done();
 
         });
@@ -49,7 +49,7 @@ describe('basic', () => {
             input: 'test1.txt'
         }).then(runner => {
 
-            expect(runner.tasks._root[0].dest).toBe('test1.txt')
+            expect(runner.entries._root[0].dest).toBe('test1.txt')
             done();
 
         });

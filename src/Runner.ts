@@ -13,7 +13,7 @@ type TaskList = { [s: string]: TaskLike; };
 type EntryResult = EntryLike | boolean | void;
 type PromisedEntryResult = Promise<EntryResult>;
 export default class Runner {
-    tasks: { [s: string]: ResolvedEntrySet; } = {}
+    entries: { [s: string]: ResolvedEntrySet; } = {}
     config: Task
 
     constructor(task: Task = {}) {
@@ -121,11 +121,11 @@ function resolveTasks(tasks?: TaskList, runner?: Runner, name?:string, parallel:
 }
 
 function logEntries(entries: ResolvedEntrySet, runner: Runner, name?: string): void {
-    name = name || `task${Object.keys(runner.tasks).length}`;
-    runner.tasks[name] = entries;
+    name = name || `task${Object.keys(runner.entries).length}`;
+    runner.entries[name] = entries;
 }
 
-function processEntries(entries: ResolvedEntrySet, task: Task, runner: Runner): PromisedEntries {
+function outputEntries(entries: ResolvedEntrySet, task: Task, runner: Runner): PromisedEntries {
 
     return Promise.resolve(entries).then(entries => {
 
@@ -178,7 +178,7 @@ function filterEntries(entries: PromisedEntries, input:InputLike, task: Task, ru
 }
 
 function evaluateEntries(entries: EntrySet, task:Task, runner:Runner, name?: string):PromisedEntries {
-    return Promise.all(entries).then(entries => processEntries(entries, task, runner)).then((entries: any[]) => {
+    return Promise.all(entries).then(entries => outputEntries(entries, task, runner)).then((entries: any[]) => {
 
         if(entries.find(entry => entry instanceof Promise)) {
             throw 'entry should be resolved before logging';
@@ -202,7 +202,6 @@ function evaluateTask(task: TaskLike, runner: Runner = new Runner, name?:string)
         task.name = task.name || name || '_root';
 
     }
-
 
     return resolveTasks(task.tasks, runner, name, task.parallel).then(() => {
 

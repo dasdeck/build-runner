@@ -21,14 +21,14 @@ describe('misc', () => {
 
                 test2: {
                     output(entries: any, runner: Runner.Runner) {
-                        expect(runner.tasks.test.length).toBe(1);
+                        expect(runner.entries.test.length).toBe(1);
                     }
                 }
             }
         });
 
         runner.run().then(runner => {
-            expect(runner.tasks.test.length).toBe(1);
+            expect(runner.entries.test.length).toBe(1);
             done();
         });
 
@@ -41,8 +41,8 @@ describe('misc', () => {
             filter: (entry: Runner.Entry) => ({...entry, src: 'test'})
         }).then((runner: Runner.Runner) => {
 
-            expect(runner.tasks._root.length).toBe(1);
-            expect(runner.tasks._root[0].src).toBe('test');
+            expect(runner.entries._root.length).toBe(1);
+            expect(runner.entries._root[0].src).toBe('test');
             done();
 
         });

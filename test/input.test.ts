@@ -11,7 +11,7 @@ describe('input', () => {
         const runner = new Runner.Runner(config);
 
         runner.run().then(runner => {
-            expect(runner.tasks._root[0].content).toBeInstanceOf(Buffer);
+            expect(runner.entries._root[0].content).toBeInstanceOf(Buffer);
             done();
         });
 
@@ -25,7 +25,7 @@ describe('input', () => {
             input: 'test1.txt'
         }).then(runner => {
 
-            expect(runner.tasks._root[0].dest).toBe('test1.txt')
+            expect(runner.entries._root[0].dest).toBe('test1.txt')
             done();
 
         });

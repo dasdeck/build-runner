@@ -1,15 +1,4 @@
 "use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 var glob = require("glob");
 var path = require("path");
@@ -21,7 +10,7 @@ exports.Entry = Entry_1.default;
 var Runner = /** @class */ (function () {
     function Runner(task) {
         if (task === void 0) { task = {}; }
-        this.tasks = {};
+        this.entries = {};
         this.config = task || {};
     }
     Runner.prototype.run = function () {
@@ -35,14 +24,14 @@ var pathResolvers = [
     function (src, input, task) {
         if (src.indexOf('http') === 0) {
             return [request(src, { encoding: null }).then(function (content) {
-                    return { content: content };
+                    return { content: content, src: src };
                 })];
         }
     },
     function (src, input, task) {
         var base = input.base || task.base || '';
         var ignore = input.ignore instanceof Array ? input.ignore : (input.ignore && [input.ignore]);
-        return glob.sync(src, { ignore: ignore, nodir: true, cwd: base }).map(function (src) { return ({ src: src, path: path.join(base, src) }); });
+        return glob.sync(src, { ignore: ignore, nodir: true, cwd: base }).map(function (dest) { return ({ dest: dest, src: path.join(base, dest) }); });
     }
 ];
 function resolvePath(src, input, task) {
@@ -50,9 +39,11 @@ function resolvePath(src, input, task) {
         var resolver_1 = pathResolvers[i];
         var res = resolver_1(src, input, task);
         if (res) {
-            var base_1 = input.base || task.base;
+            var base = input.base || task.base;
             var dest_1 = input.dest || task.dest;
-            return { value: Promise.resolve(res).then(function (res) { return Promise.all(res); }).then(function (res) { return res.map(function (data) { return new Entry_1.default(__assign({ src: src, base: base_1, dest: dest_1 }, data)); }); }) };
+            return { value: Promise.resolve(res).then(function (res) { return Promise.all(res); }).then(function (res) { return res.map(function (data) { return new Entry_1.default(data).inDest(dest_1); }); }).catch(function (err) {
+                    throw "error in task " + task.name + ".input : " + err;
+                }) };
         }
     };
     for (var i in pathResolvers) {
@@ -93,25 +84,29 @@ function resolveTasks(tasks, runner, name, parallel) {
     }
 }
 function logEntries(entries, runner, name) {
-    name = name || "task" + Object.keys(runner.tasks).length;
-    runner.tasks[name] = entries;
+    name = name || "task" + Object.keys(runner.entries).length;
+    runner.entries[name] = entries;
 }
-function processEntries(entries, task, runner) {
-    if (task.output) {
-        var res = task.output(entries, runner, task);
-        if (res === true || typeof res === 'undefined') {
-            return Promise.resolve(entries);
-        }
-        else if (res) {
-            return Promise.resolve(res).then(function (res) { return res.map(Entry_1.default.forceEntry).filter(function (v) { return v; }); });
+function outputEntries(entries, task, runner) {
+    return Promise.resolve(entries).then(function (entries) {
+        if (task.output) {
+            var res = task.output(entries, runner, task);
+            if (res === true || typeof res === 'undefined') {
+                return entries;
+            }
+            else if (res) {
+                return Promise.resolve(res).then(function (res) { return res.map(Entry_1.default.forceEntry).filter(function (v) { return v; }); });
+            }
+            else {
+                return [];
+            }
         }
         else {
-            return Promise.resolve([]);
+            return entries;
         }
-    }
-    else {
-        return Promise.resolve(entries);
-    }
+    }).catch(function (err) {
+        throw "Error in task " + task.name + ".output : " + err;
+    });
 }
 function filterEntries(entries, input, task, runner) {
     var filter = typeof input !== 'string' && input.filter || task.filter;
@@ -124,14 +119,16 @@ function filterEntries(entries, input, task, runner) {
             else if (res) {
                 return Promise.resolve(res).then(Entry_1.default.forceEntry);
             }
-        })).then(function (res) { return res.filter(function (v) { return v; }); }); });
+        })).then(function (res) { return res.filter(function (v) { return v; }); }); }).catch(function (err) {
+            throw "Error in task " + task.name + ".filter";
+        });
     }
     else {
         return entries;
     }
 }
 function evaluateEntries(entries, task, runner, name) {
-    return Promise.all(entries).then(function (entries) { return processEntries(entries, task, runner); }).then(function (entries) {
+    return Promise.all(entries).then(function (entries) { return outputEntries(entries, task, runner); }).then(function (entries) {
         if (entries.find(function (entry) { return entry instanceof Promise; })) {
             throw 'entry should be resolved before logging';
         }
@@ -146,6 +143,9 @@ function evaluateTask(task, runner, name) {
     }
     else if (task instanceof Function) {
         return Promise.resolve(task(runner)).then(function (res) { return res && evaluateTask(res, runner, name); });
+    }
+    else {
+        task.name = task.name || name || '_root';
     }
     return resolveTasks(task.tasks, runner, name, task.parallel).then(function () {
         var inputs = task.input instanceof Array ? task.input : task.input && [task.input] || [];

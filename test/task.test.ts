@@ -1,44 +1,37 @@
 import * as Runner from '../src/Runner';
 import * as path from 'path';
 
+
+
 describe('basic', () => {
+
 
     /**
      * directly return an array of file entries from task entry
      */
     it('pure-entry-task', done => {
 
-        const config = {
+        Runner.run( {
             tasks: {
-                task1: [
-                    {
-                        src: 'test1.txt'
-                    }
-                ],
-                task2: (runner: Runner.Runner) => [
-                    {
-                        src: 'test2.txt',
-                        runner
-                    }
-                ]
-
-
+                task1: [{src: 'test1.txt'}],
+                task2: () => [{src: 'test2.txt'}],
+                task3: () => Promise.resolve([{src: 'test3.txt'}])
             },
             output: (entries: Runner.Entry[], runner: Runner.Runner) => {
 
                 expect(runner).toBeDefined();
-                expect(runner.tasks.task1.length).toBe(1);
-                expect(runner.tasks.task1[0]).toBeInstanceOf(Runner.Entry);
-                expect(runner.tasks.task1[0].dest).toBe('test1.txt');
-                expect(runner.tasks.task2.length).toBe(1);
-                expect(runner.tasks.task2[0].dest).toBe('test2.txt');
-                expect((<any>runner.tasks.task2[0]).runner).toBe(runner);
+                expect(runner.entries.task1.length).toBe(1);
+                expect(runner.entries.task1[0]).toBeInstanceOf(Runner.Entry);
+                expect(runner.entries.task1[0].dest).toBe('test1.txt');
+                expect(runner.entries.task2.length).toBe(1);
+                expect(runner.entries.task2[0].dest).toBe('test2.txt');
+
+                expect(runner.entries.task3.length).toBe(1);
+                expect(runner.entries.task3[0].dest).toBe('test3.txt');
+
             }
 
-        };
-        const runner = new Runner.Runner(config)
-        runner.run().then(runner => {
-
+        }).then(runner => {
 
             done();
 
@@ -64,8 +57,8 @@ describe('basic', () => {
             output: (entries: Runner.Entry[], runner: Runner.Runner) => {
 
                 expect(runner).toBeDefined();
-                expect(runner.tasks.task1.length).toBe(3)
-                expect(runner.tasks.task1[2].dest).toBe('test2.txt')
+                expect(runner.entries.task1.length).toBe(3)
+                expect(runner.entries.task1[2].dest).toBe('test2.txt')
             }
 
         }).then(runner => {
@@ -79,7 +72,7 @@ describe('basic', () => {
     /**
      * return a task via a promise
      */
-    it('function-task-promise', done => {
+    it('return-promised-task', done => {
 
         const base = path.join(__dirname, 'content');
         Runner.run({
@@ -94,8 +87,8 @@ describe('basic', () => {
             output: (entries: Runner.Entry[], runner: Runner.Runner) => {
 
                 expect(runner).toBeDefined();
-                expect(runner.tasks.task1.length).toBe(3)
-                expect(runner.tasks.task1[2].dest).toBe('test2.txt')
+                expect(runner.entries.task1.length).toBe(3)
+                expect(runner.entries.task1[2].dest).toBe('test2.txt')
             }
 
         }).then(runner => {
