@@ -14,6 +14,7 @@ describe('content', () => {
                 src: '**/*'
         }).then(entries => {
 
+            expect(entries[0].content).toBeUndefined();
             expect(entries[0].loadContent()).toBe('');
             done();
         });

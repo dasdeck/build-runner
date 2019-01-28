@@ -60,7 +60,7 @@ describe('filter', () => {
         });
     });
 
-    it('task-filter', done => {
+    it('task-wide-filter', done => {
         Runner.run({
             input: {
                 base: path.join(__dirname, 'content'),
