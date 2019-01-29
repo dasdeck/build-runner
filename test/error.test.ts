@@ -1,17 +1,15 @@
-import {Runner} from '../src/Runner';
+import {Runner, run} from '../src/Runner';
 
 
 describe('error', () => {
 
     it('input error', done => {
 
-        const r = new Runner({
+        run({
 
             input: 'http::::///'
 
-        });
-
-        r.run().catch(err => {
+        }).catch(err => {
 
             expect(err).toContain('_root.input');
             done();
@@ -23,16 +21,15 @@ describe('error', () => {
 
     it('filter error', done => {
 
-        const r = new Runner({
+        run({
 
             input: '**/*',
             filter: () => {throw 'err'}
 
-        });
-
-        r.run().catch(err => {
+        }).catch(err => {
 
             expect(err).toContain('_root.filter');
+            expect(err).toContain(': err');
             done();
 
         });
@@ -41,14 +38,12 @@ describe('error', () => {
 
     it('filter error in promise', done => {
 
-        const r = new Runner({
+        run({
 
             input: '**/*',
             filter: () => new Promise((res,rej) => rej('err'))
 
-        });
-
-        r.run().catch(err => {
+        }).catch(err => {
 
             expect(err).toContain('_root.filter');
             done();
@@ -59,16 +54,15 @@ describe('error', () => {
 
     it('output error', done => {
 
-        const r = new Runner({
+        run({
 
             input: '**/*',
             output: () => {throw 'err'}
 
-        });
-
-        r.run().catch(err => {
+        }).catch(err => {
 
             expect(err).toContain('_root.output');
+            expect(err).toContain(': err');
             done();
 
         });

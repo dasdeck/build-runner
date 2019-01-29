@@ -13,7 +13,6 @@ var __assign = (this && this.__assign) || function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var path = require("path");
 var fs = require("fs");
-;
 var Entry = /** @class */ (function () {
     function Entry(data) {
         this.dest = '';

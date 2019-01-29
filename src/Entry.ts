@@ -1,18 +1,10 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
-declare class Zip {};
-type Content = string|Buffer|Zip;
+import {Content, EntryLike} from './interface';
 
-interface EntryLike {
-    src?: string
-    content?: Content
-    dest?:string
-}
 
-export {
-    EntryLike
-}
+
 export default class Entry implements EntryLike {
 
     src?: string

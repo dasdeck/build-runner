@@ -2,53 +2,48 @@ import * as glob from 'glob';
 import * as path from 'path';
 import * as request from 'request-promise-native';
 import {resolver} from './util';
-import Entry, {EntryLike} from './Entry';
+import Entry from './Entry';
+import Task from './Task';
+import {TaskLike, EntrySet, PromisedEntries, ResolvedEntrySet, PromisedEntryResult, Input, InputLike, EntryResult} from './interface';
 
-type EntrySet = Entry[];
-type PromisedEntries = Promise<EntrySet>
-type ResolvedEntrySet = Entry[];
-type OneOrMore<T> = T | T[];
-type TaskLike = Task | Function | any[];
-type TaskList = { [s: string]: TaskLike; };
-type EntryResult = EntryLike | boolean | void;
-type PromisedEntryResult = Promise<EntryResult>;
+
 export default class Runner {
     entries: { [s: string]: ResolvedEntrySet; } = {}
-    config: Task
+    tasks: { [s: string]: Task; } = {}
+    currentTask?:Task
+    // taskStack:Task[] = []
+    _config: any = {}
 
-    constructor(task: Task = {}) {
-        this.config = task || {};
+    constructor(config: any = {}) {
+        this._config = config;
     }
 
-    run(): Promise<Runner> {
-        return run(this.config, this.config, this);
+    startTask(task: Task) {
+        this.currentTask = task;
+        // this.taskStack.push(task);
+        this.tasks[task.name] = task;
+    }
+
+    endTask(task: Task) {
+
+    }
+
+    // get currentTask() {
+    //     return this.taskStack[this.taskStack.length - 1];
+    // }
+
+
+    get config() {
+        return this.currentTask ? this.currentTask.currentConfig : this._config;
+    }
+
+    log(...args: any) {
+        if (this._config.verbose) {
+            console.log(...args);
+        }
     }
 }
 
-interface Filter {(entry: Entry, runner: Runner):EntryResult|PromisedEntryResult}
-interface Output {(entries: EntrySet, runner: Runner, task: Task):EntryLike[] | Promise<EntryLike[]> | void | boolean}
-
-interface Input {
-    src?:OneOrMore<string>,
-    ignore?:OneOrMore<string>,
-    content?:string|Buffer,
-    dest?:string,
-    base?:string,
-    filter?:Filter
-}
-
-type InputLike = Input|string;
-
-interface Task {
-    dest?:string,
-    base?:string, //shared base
-    filter?:Filter,
-    input?:OneOrMore<InputLike>,
-    output?:Output,
-    tasks?:TaskList,
-    name?:string,
-    parallel?:boolean
-}
 
 const pathResolvers = [
 
@@ -67,7 +62,7 @@ const pathResolvers = [
     }
 ]
 
-function resolvePath(src: string, input: Input, task: Task): PromisedEntries {
+function resolvePath(src: string, input: Input, task: Task = new Task({})): PromisedEntries {
 
     for (const i in pathResolvers) {
         const resolver = pathResolvers[i];
@@ -86,7 +81,7 @@ function resolvePath(src: string, input: Input, task: Task): PromisedEntries {
 
 }
 
-function getEntries(input: InputLike, task: Task = {}): PromisedEntries {
+function getEntries(input: InputLike, task?: Task): PromisedEntries {
 
         if (typeof input === 'string') {
 
@@ -105,16 +100,16 @@ function getEntries(input: InputLike, task: Task = {}): PromisedEntries {
 
 }
 
-function filterInput(input: InputLike, task: Task = {}, runner: Runner = new Runner):PromisedEntries {
+function filterInput(input: InputLike, task: Task, runner: Runner = new Runner(task)):PromisedEntries {
     const entries = getEntries(input, task);
     return filterEntries(entries, input, task, runner);
 
 }
 
 
-function resolveTasks(tasks?: TaskList, runner?: Runner, name?:string, parallel:boolean = false): PromisedEntries {
-    if (tasks) {
-        return resolver(Object.keys(tasks).map(name => () => evaluateTask(tasks[name], runner, name)), parallel)
+function resolveTasks(parent: Task, runner: Runner): PromisedEntries {
+    if (parent.tasks) {
+        return resolver(Object.keys(parent.tasks).map(name => () => evaluateTask(parent.tasks ? parent.tasks[name] : {}, runner, parent, name)), parent.parallel)
     } else {
         return Promise.resolve([]);
     }
@@ -128,7 +123,6 @@ function logEntries(entries: ResolvedEntrySet, runner: Runner, name?: string): v
 function outputEntries(entries: ResolvedEntrySet, task: Task, runner: Runner): PromisedEntries {
 
     return Promise.resolve(entries).then(entries => {
-
 
         if (task.output) {
 
@@ -144,6 +138,7 @@ function outputEntries(entries: ResolvedEntrySet, task: Task, runner: Runner): P
         } else {
             return entries;
         }
+
     }).catch(err => {
 
         throw `Error in task ${task.name}.output : ${err}`;
@@ -168,7 +163,7 @@ function filterEntries(entries: PromisedEntries, input:InputLike, task: Task, ru
             }
 
         })).then(res => res.filter(v => v))).catch(err => {
-            throw `Error in task ${task.name}.filter`
+            throw `Error in task ${task.name}.filter : ${err}`
         });
 
     } else {
@@ -189,35 +184,45 @@ function evaluateEntries(entries: EntrySet, task:Task, runner:Runner, name?: str
     });
 }
 
-function evaluateTask(task: TaskLike, runner: Runner = new Runner, name?:string):PromisedEntries {
+function evaluateTask(taskl: TaskLike, runner: Runner, parent?: Task, name?:string):PromisedEntries {
 
 
-    if (task instanceof Array) {
-        return evaluateEntries(task.map(data => new Entry(data)), {}, runner, name);
+    if (taskl instanceof Array) {
 
-    } else if (task instanceof Function) {
-        return Promise.resolve(task(runner)).then(res => res && evaluateTask(res, runner, name));
-    } else {
+        runner.log('starting task:' + name);
+        return evaluateEntries(taskl.map(data => new Entry(data)), new Task({}, name, parent), runner, name);
 
-        task.name = task.name || name || '_root';
+    } else if (taskl instanceof Function) {
+
+        return Promise.resolve(taskl(runner)).then(res => res && evaluateTask(res, runner, parent, name));
+
+    } else if (taskl) {
+
+        const task:Task = taskl instanceof Task ?  taskl : new Task(taskl, name, parent);
+
+        runner.startTask(task);
+
+        return resolveTasks(task, runner).then(() => {
+
+
+            const inputs = task.input instanceof Array ? task.input : task.input && [task.input] || [];
+
+            return Promise.all(inputs.map(input => filterInput(input, task, runner)))
+            .then(inputsSets => inputsSets.reduce((res, set) => res.concat(set), []))
+            .then(entries => evaluateEntries(entries, task, runner, name))
+            .then(entries => {delete runner.currentTask; return entries})
+
+        });
 
     }
 
-    return resolveTasks(task.tasks, runner, name, task.parallel).then(() => {
-
-        const inputs = task.input instanceof Array ? task.input : task.input && [task.input] || [];
-
-        return Promise.all(inputs.map(input => filterInput(input, task, runner)))
-        .then(inputsSets => inputsSets.reduce((res, set) => res.concat(set), []))
-        .then(entries => evaluateEntries(entries, task, runner, name))
-
-
-    });
+    return Promise.resolve([])
 
 }
 
-function run(task:Task, config?:object, runner: Runner = new Runner(config || task)):Promise<Runner> {
-    return evaluateTask(task, runner, '_root').then(() => runner);
+function run(task:TaskLike, config:any = {}, runner: Runner = new Runner(config)):Promise<Runner> {
+
+    return evaluateTask(task, runner, undefined, '_root').then(() => runner);
 }
 
 export {

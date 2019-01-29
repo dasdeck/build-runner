@@ -104,13 +104,11 @@ describe('basic', () => {
      */
     it ('no-return-task', done => {
 
-        const runner = new Runner.Runner({
+        Runner.run({
             tasks: {
                 test: () => Promise.resolve()
             }
-        });
-
-        runner.run().then(() => {
+        }).then(() => {
             done();
         });
 

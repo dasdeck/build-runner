@@ -11,7 +11,7 @@ describe('misc', () => {
     it('wait-for-filtered-entries', done => {
 
         const base = path.join(__dirname, 'content');
-        const runner = new Runner.Runner({
+        Runner.run({
             tasks: {
 
                 test: {
@@ -25,9 +25,7 @@ describe('misc', () => {
                     }
                 }
             }
-        });
-
-        runner.run().then(runner => {
+        }).then(runner => {
             expect(runner.entries.test.length).toBe(1);
             done();
         });

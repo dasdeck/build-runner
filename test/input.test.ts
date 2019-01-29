@@ -8,9 +8,8 @@ describe('input', () => {
         const config = {
             input: 'https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png'
         }
-        const runner = new Runner.Runner(config);
 
-        runner.run().then(runner => {
+        Runner.run(config).then(runner => {
             expect(runner.entries._root[0].content).toBeInstanceOf(Buffer);
             done();
         });
