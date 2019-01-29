@@ -8,9 +8,12 @@ var Task = /** @class */ (function () {
         this.parent = parent;
         Object.assign(this, data);
     }
-    Object.defineProperty(Task.prototype, "currentConfig", {
+    Object.defineProperty(Task.prototype, "config", {
         get: function () {
-            return Object.assign(this.parent && this.parent.currentConfig || Object.assign({}), this.config);
+            return Object.assign(this.parent && this.parent.config || Object.assign({}, this.runner.config), this._config);
+        },
+        set: function (conf) {
+            this._config = conf;
         },
         enumerable: true,
         configurable: true

@@ -10,10 +10,10 @@ import {TaskLike, EntrySet, PromisedEntries, ResolvedEntrySet, PromisedEntryResu
 export default class Runner {
     entries: { [s: string]: ResolvedEntrySet; } = {}
     tasks: { [s: string]: Task; } = {}
-    config: any = {}
+    _config: any = {}
 
     constructor(config: any = {}) {
-        this.config = config;
+        this._config = config;
     }
 
     startTask(task: Task) {
@@ -22,6 +22,10 @@ export default class Runner {
 
     endTask(task: Task) {
 
+    }
+
+    get config() {
+        return this._config;
     }
 
 
@@ -181,7 +185,7 @@ function evaluateTask(taskl: TaskLike, runner: Runner, parent?: Task, name?:stri
 
     } else if (taskl instanceof Function) {
 
-        return Promise.resolve(taskl(runner)).then(res => res && evaluateTask(res, runner, parent, name));
+        return Promise.resolve(taskl(runner, parent || runner)).then(res => res && evaluateTask(res, runner, parent, name));
 
     } else if (taskl) {
 

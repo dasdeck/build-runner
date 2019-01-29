@@ -13,14 +13,21 @@ var Runner = /** @class */ (function () {
         if (config === void 0) { config = {}; }
         this.entries = {};
         this.tasks = {};
-        this.config = {};
-        this.config = config;
+        this._config = {};
+        this._config = config;
     }
     Runner.prototype.startTask = function (task) {
         this.tasks[task.name] = task;
     };
     Runner.prototype.endTask = function (task) {
     };
+    Object.defineProperty(Runner.prototype, "config", {
+        get: function () {
+            return this._config;
+        },
+        enumerable: true,
+        configurable: true
+    });
     Runner.prototype.log = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
@@ -154,7 +161,7 @@ function evaluateTask(taskl, runner, parent, name) {
         return evaluateEntries(taskl.map(function (data) { return new Entry_1.default(data); }), new Task_1.default(runner, {}, name, parent), runner, name);
     }
     else if (taskl instanceof Function) {
-        return Promise.resolve(taskl(runner)).then(function (res) { return res && evaluateTask(res, runner, parent, name); });
+        return Promise.resolve(taskl(runner, parent || runner)).then(function (res) { return res && evaluateTask(res, runner, parent, name); });
     }
     else if (taskl) {
         var task_1 = taskl instanceof Task_1.default ? taskl : new Task_1.default(runner, taskl, name, parent);

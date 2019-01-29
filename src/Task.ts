@@ -4,7 +4,7 @@ import {TaskInterface, Filter, OneOrMore, InputLike, Output, TaskList, EntrySet,
 import { Runner } from '.';
 export default class Task implements TaskInterface {
 
-    config?:any
+    _config?:any
     dest?:string
     base?:string //shared base
     filter?:Filter
@@ -21,12 +21,17 @@ export default class Task implements TaskInterface {
         this.runner = runner;
         this.name = name;
         this.parent = parent;
+
         Object.assign(this, data);
 
     }
 
-    get currentConfig(): any {
-        return Object.assign(this.parent && this.parent.currentConfig || Object.assign({}), this.config);
+    set config(conf) {
+        this._config = conf;
+    }
+
+    get config(): any {
+        return Object.assign(this.parent && this.parent.config || Object.assign({}, this.runner.config), this._config);
     }
 
     get entries(): ResolvedEntrySet {

@@ -9,12 +9,12 @@ describe('config', () => {
 
         const config = {
             tasks: {
-                test: (runner: Runner) => [{content: runner.config}]
+                test: (runner: Runner) => [{content: runner._config}]
             }
         }
 
         run(config).then(runner => {
-            expect((<any>runner.entries.test[0]).content).toBe(runner.config);
+            expect((<any>runner.entries.test[0]).content).toBe(runner._config);
             done();
         })
 
@@ -33,14 +33,20 @@ describe('config', () => {
                     config: {
                         test: 2
                     },
-                    output(entries, runner, {currentConfig: config}) {
+
+                    tasks: {
+                        task2(runner: Runner, {config}: {config:any}) {
+                            expect(config.test).toBe(2);
+                        }
+                    },
+                    output(entries, runner, {config}) {
                         expect(config.test).toBe(2);
                         return [{src: 'test1'}]
                     }
                 }
             },
 
-            output(entries, runner, {currentConfig: config}) {
+            output(entries, runner, {config}) {
 
                 expect(config.test).toBe(1);
                 done();
