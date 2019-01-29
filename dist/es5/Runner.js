@@ -13,33 +13,20 @@ var Runner = /** @class */ (function () {
         if (config === void 0) { config = {}; }
         this.entries = {};
         this.tasks = {};
-        // taskStack:Task[] = []
-        this._config = {};
-        this._config = config;
+        this.config = {};
+        this.config = config;
     }
     Runner.prototype.startTask = function (task) {
-        this.currentTask = task;
-        // this.taskStack.push(task);
         this.tasks[task.name] = task;
     };
     Runner.prototype.endTask = function (task) {
     };
-    Object.defineProperty(Runner.prototype, "config", {
-        // get currentTask() {
-        //     return this.taskStack[this.taskStack.length - 1];
-        // }
-        get: function () {
-            return this.currentTask ? this.currentTask.currentConfig : this._config;
-        },
-        enumerable: true,
-        configurable: true
-    });
     Runner.prototype.log = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];
         }
-        if (this._config.verbose) {
+        if (this.config.verbose) {
             console.log.apply(console, args);
         }
     };
@@ -62,7 +49,7 @@ var pathResolvers = [
     }
 ];
 function resolvePath(src, input, task) {
-    if (task === void 0) { task = new Task_1.default({}); }
+    if (task === void 0) { task = new Task_1.default(new Runner(), {}); }
     var _loop_1 = function (i) {
         var resolver_1 = pathResolvers[i];
         var res = resolver_1(src, input, task);
@@ -164,20 +151,19 @@ function evaluateEntries(entries, task, runner, name) {
 function evaluateTask(taskl, runner, parent, name) {
     if (taskl instanceof Array) {
         runner.log('starting task:' + name);
-        return evaluateEntries(taskl.map(function (data) { return new Entry_1.default(data); }), new Task_1.default({}, name, parent), runner, name);
+        return evaluateEntries(taskl.map(function (data) { return new Entry_1.default(data); }), new Task_1.default(runner, {}, name, parent), runner, name);
     }
     else if (taskl instanceof Function) {
         return Promise.resolve(taskl(runner)).then(function (res) { return res && evaluateTask(res, runner, parent, name); });
     }
     else if (taskl) {
-        var task_1 = taskl instanceof Task_1.default ? taskl : new Task_1.default(taskl, name, parent);
+        var task_1 = taskl instanceof Task_1.default ? taskl : new Task_1.default(runner, taskl, name, parent);
         runner.startTask(task_1);
         return resolveTasks(task_1, runner).then(function () {
             var inputs = task_1.input instanceof Array ? task_1.input : task_1.input && [task_1.input] || [];
             return Promise.all(inputs.map(function (input) { return filterInput(input, task_1, runner); }))
                 .then(function (inputsSets) { return inputsSets.reduce(function (res, set) { return res.concat(set); }, []); })
-                .then(function (entries) { return evaluateEntries(entries, task_1, runner, name); })
-                .then(function (entries) { delete runner.currentTask; return entries; });
+                .then(function (entries) { return evaluateEntries(entries, task_1, runner, name); });
         });
     }
     return Promise.resolve([]);

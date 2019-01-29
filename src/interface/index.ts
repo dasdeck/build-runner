@@ -1,8 +1,5 @@
 
-// declare class Entry {};
 declare class Zip {};
-// declare class Runner {};
-// declare class Task {};
 import Entry from '../Entry';
 import Runner from '../Runner';
 import Task from '../Task';

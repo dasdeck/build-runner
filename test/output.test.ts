@@ -42,4 +42,32 @@ describe('output', () => {
 
     });
 
+    it('task-has-entries-and-sub-entries', done => {
+
+        const base = path.join(__dirname, 'content');
+        Runner.run({
+
+            tasks: {
+                task1: {
+                    input: {
+                        base,
+                        src: '**/*'
+                    }
+                }
+            },
+
+            output: (entries, runner, task) => {
+                expect(task.subEntries.length).not.toBe(0);
+                expect(task.entries.length).not.toBe(0);
+            }
+        }).then(({entries:{_root:entries}}) => {
+
+            expect(entries[0]).toBeInstanceOf(Runner.Entry);
+            done();
+        });
+
+        done();
+
+    });
+
 });

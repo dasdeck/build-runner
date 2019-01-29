@@ -1,6 +1,7 @@
 
 
-import {TaskInterface, Filter, OneOrMore, InputLike, Output, TaskList} from './interface';
+import {TaskInterface, Filter, OneOrMore, InputLike, Output, TaskList, EntrySet, ResolvedEntrySet} from './interface';
+import { Runner } from '.';
 export default class Task implements TaskInterface {
 
     config?:any
@@ -13,17 +14,30 @@ export default class Task implements TaskInterface {
     name:string
     parent?:Task
     parallel?:boolean
+    runner: Runner
 
-    constructor(data: any, name: string = '_root', parent?: Task) {
+    constructor(runner: Runner, data: any, name: string = '_root', parent?: Task) {
 
+        this.runner = runner;
+        this.name = name;
+        this.parent = parent;
         Object.assign(this, data);
-
-        this.name = data.name || name;
-        this.parent = data.parent || parent;
 
     }
 
     get currentConfig(): any {
         return Object.assign(this.parent && this.parent.currentConfig || Object.assign({}), this.config);
+    }
+
+    get entries(): ResolvedEntrySet {
+        return this.runner.entries[this.name];
+    }
+
+    get subEntries(): ResolvedEntrySet {
+        if (this.tasks) {
+            return Object.keys(this.tasks).reduce((res: ResolvedEntrySet, name) => res.concat(this.runner.entries[name]), [])
+        } else {
+            return [];
+        }
     }
 }

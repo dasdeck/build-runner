@@ -10,17 +10,13 @@ import {TaskLike, EntrySet, PromisedEntries, ResolvedEntrySet, PromisedEntryResu
 export default class Runner {
     entries: { [s: string]: ResolvedEntrySet; } = {}
     tasks: { [s: string]: Task; } = {}
-    currentTask?:Task
-    // taskStack:Task[] = []
-    _config: any = {}
+    config: any = {}
 
     constructor(config: any = {}) {
-        this._config = config;
+        this.config = config;
     }
 
     startTask(task: Task) {
-        this.currentTask = task;
-        // this.taskStack.push(task);
         this.tasks[task.name] = task;
     }
 
@@ -28,17 +24,9 @@ export default class Runner {
 
     }
 
-    // get currentTask() {
-    //     return this.taskStack[this.taskStack.length - 1];
-    // }
-
-
-    get config() {
-        return this.currentTask ? this.currentTask.currentConfig : this._config;
-    }
 
     log(...args: any) {
-        if (this._config.verbose) {
+        if (this.config.verbose) {
             console.log(...args);
         }
     }
@@ -62,7 +50,7 @@ const pathResolvers = [
     }
 ]
 
-function resolvePath(src: string, input: Input, task: Task = new Task({})): PromisedEntries {
+function resolvePath(src: string, input: Input, task: Task = new Task(new Runner(), {})): PromisedEntries {
 
     for (const i in pathResolvers) {
         const resolver = pathResolvers[i];
@@ -83,20 +71,20 @@ function resolvePath(src: string, input: Input, task: Task = new Task({})): Prom
 
 function getEntries(input: InputLike, task?: Task): PromisedEntries {
 
-        if (typeof input === 'string') {
+    if (typeof input === 'string') {
 
-            return resolvePath(input, {}, task);
+        return resolvePath(input, {}, task);
 
-        } else if (input instanceof Array) {
+    } else if (input instanceof Array) {
 
-             return Promise.all(input.map((input: InputLike) => getEntries(input, task))).then(sets => sets.reduce((res, set) => res.concat(set)));
+            return Promise.all(input.map((input: InputLike) => getEntries(input, task))).then(sets => sets.reduce((res, set) => res.concat(set)));
 
-        } else {
+    } else {
 
-            const src: string[] = input.src ? (input.src instanceof Array ? input.src : [input.src]) : [];
-            return Promise.all(src.map(src => resolvePath(src, input, task))).then(sets => sets.reduce((res, set) => res.concat(set)))
+        const src: string[] = input.src ? (input.src instanceof Array ? input.src : [input.src]) : [];
+        return Promise.all(src.map(src => resolvePath(src, input, task))).then(sets => sets.reduce((res, set) => res.concat(set)))
 
-        }
+    }
 
 }
 
@@ -186,11 +174,10 @@ function evaluateEntries(entries: EntrySet, task:Task, runner:Runner, name?: str
 
 function evaluateTask(taskl: TaskLike, runner: Runner, parent?: Task, name?:string):PromisedEntries {
 
-
     if (taskl instanceof Array) {
 
         runner.log('starting task:' + name);
-        return evaluateEntries(taskl.map(data => new Entry(data)), new Task({}, name, parent), runner, name);
+        return evaluateEntries(taskl.map(data => new Entry(data)), new Task(runner, {}, name, parent), runner, name);
 
     } else if (taskl instanceof Function) {
 
@@ -198,19 +185,17 @@ function evaluateTask(taskl: TaskLike, runner: Runner, parent?: Task, name?:stri
 
     } else if (taskl) {
 
-        const task:Task = taskl instanceof Task ?  taskl : new Task(taskl, name, parent);
+        const task:Task = taskl instanceof Task ?  taskl : new Task(runner, taskl, name, parent);
 
         runner.startTask(task);
 
         return resolveTasks(task, runner).then(() => {
 
-
             const inputs = task.input instanceof Array ? task.input : task.input && [task.input] || [];
 
             return Promise.all(inputs.map(input => filterInput(input, task, runner)))
             .then(inputsSets => inputsSets.reduce((res, set) => res.concat(set), []))
-            .then(entries => evaluateEntries(entries, task, runner, name))
-            .then(entries => {delete runner.currentTask; return entries})
+            .then(entries => evaluateEntries(entries, task, runner, name));
 
         });
 

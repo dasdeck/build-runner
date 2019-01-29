@@ -9,12 +9,12 @@ describe('config', () => {
 
         const config = {
             tasks: {
-                test: (runner: Runner) => [{content: runner._config}]
+                test: (runner: Runner) => [{content: runner.config}]
             }
         }
 
         run(config).then(runner => {
-            expect((<any>runner.entries.test[0]).content).toBe(runner._config);
+            expect((<any>runner.entries.test[0]).content).toBe(runner.config);
             done();
         })
 
