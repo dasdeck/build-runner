@@ -228,10 +228,5 @@ function run(task:TaskLike | TaskFactory, config:GenericObject = {}, runner: Run
 
 export {
     run,
-    Runner,
-    getEntries,
-    filterInput,
-    evaluateTask,
-    Entry,
-    resolver
+    Runner
 }

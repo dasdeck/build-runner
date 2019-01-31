@@ -1,4 +1,4 @@
-import * as Runner from '../src/Runner';
+import * as Runner from '../src';
 import * as path from 'path';
 
 describe('output', () => {

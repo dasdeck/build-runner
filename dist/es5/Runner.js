@@ -4,9 +4,7 @@ var glob = require("glob");
 var path = require("path");
 var request = require("request-promise-native");
 var util_1 = require("./util");
-exports.resolver = util_1.resolver;
 var Entry_1 = require("./Entry");
-exports.Entry = Entry_1.default;
 var Task_1 = require("./Task");
 var Runner = /** @class */ (function () {
     function Runner(config) {
@@ -92,13 +90,11 @@ function getEntries(input, task) {
         return Promise.all(src.map(function (src) { return resolvePath(src, input, task); })).then(function (sets) { return sets.reduce(function (res, set) { return res.concat(set); }); });
     }
 }
-exports.getEntries = getEntries;
 function filterInput(input, task, runner) {
     if (runner === void 0) { runner = new Runner(task); }
     var entries = getEntries(input, task);
     return filterEntries(entries, input, task, runner);
 }
-exports.filterInput = filterInput;
 function resolveTasks(parent, runner) {
     if (parent.tasks) {
         return util_1.resolver(Object.keys(parent.tasks).map(function (name) { return function () { return evaluateTask(parent.tasks ? parent.tasks[name] : {}, runner, parent, name); }; }), parent.parallel);
@@ -190,7 +186,6 @@ function evaluateTask(taskl, runner, parent, name) {
     }
     return Promise.resolve([]);
 }
-exports.evaluateTask = evaluateTask;
 function run(task, config, runner) {
     if (config === void 0) { config = {}; }
     if (runner === void 0) { runner = new Runner(config); }

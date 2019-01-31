@@ -1,4 +1,4 @@
-import * as Runner from '../src/Runner';
+import * as Runner from '../src/index';
 import * as path from 'path';
 
 describe('content', () => {
@@ -9,10 +9,11 @@ describe('content', () => {
     it('load-content', done => {
 
         const base = path.join(__dirname, 'content');
-        Runner.getEntries({
+        Runner.run({
+            input: {
                 base,
                 src: '**/*'
-        }).then(entries => {
+        }}).then(({entries: {_root: entries}}) => {
 
             expect(entries[0].content).toBeUndefined();
             expect(entries[0].loadContent()).toBe('');

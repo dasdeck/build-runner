@@ -1,6 +1,6 @@
 
 
-import * as Runner from '../src/Runner';
+import * as Runner from '../src';
 import * as path from 'path';
 
 describe('glob-path', () => {
@@ -8,10 +8,11 @@ describe('glob-path', () => {
     it('evaluate-basic-glob', done => {
 
         const base = path.join(__dirname, 'content');
-        Runner.getEntries({
+        Runner.run({input:
+            {
                 base,
                 src: '**/*'
-        }).then(entries => {
+        }}).then(({entries: {_root: entries}}) => {
 
 
             expect(entries.length).toBe(3);
@@ -25,13 +26,16 @@ describe('glob-path', () => {
 
     it('evaluate-multi-glob', done => {
 
-        Runner.getEntries({
+        Runner.run({
+            input: {
+
                 base: path.join(__dirname, 'content'),
                 src: [
                     '*.txt',
                     'sub1/*.txt'
                 ]
-        }).then(entries => {
+            }
+        }).then(({entries: {_root: entries}}) => {
 
             expect(entries.length).toBe(3);
             done();
@@ -41,14 +45,15 @@ describe('glob-path', () => {
 
     it('evaluate-multi-glob-ignore', done => {
 
-        Runner.getEntries({
+        Runner.run({
+            input: {
                 base: path.join(__dirname, 'content'),
                 src: [
                     '*.txt',
                     'sub1/*.txt'
                 ],
                 ignore: 'test1.txt'
-        }).then(entries => {
+        }}).then(({entries: {_root: entries}}) => {
             expect(entries.length).toBe(2);
             done();
         })
@@ -57,7 +62,8 @@ describe('glob-path', () => {
 
     it('evaluate-multi-glob-multi-ignore', done => {
 
-        Runner.getEntries({
+        Runner.run({
+            input: {
                 base: path.join(__dirname, 'content'),
                 src: [
                     '*.txt',
@@ -67,7 +73,7 @@ describe('glob-path', () => {
                     'test1.txt',
                     'test2.txt'
                 ]
-        }).then(entries => {
+        }}).then(({entries: {_root: entries}}) => {
 
             expect(entries.length).toBe(1);
             done();
