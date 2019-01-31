@@ -67,7 +67,6 @@ function resolvePath(src, input, task) {
         var resolver_1 = pathResolvers[i];
         var res = resolver_1(src, input, task);
         if (res) {
-            var base = input.base || task.base;
             var dest_1 = input.dest || task.dest;
             return { value: Promise.resolve(res).then(function (res) { return Promise.all(res); }).then(function (res) { return res.map(function (data) { return new Entry_1.default(data).inDest(dest_1); }); }).catch(function (err) {
                     throw "Error in task " + task.fullName + ".input : " + err + " \n " + err.stack;
@@ -173,7 +172,8 @@ function evaluateTask(taskl, runner, parent, name) {
         return evaluateEntries(taskl.map(function (data) { return new Entry_1.default(data); }), task, runner);
     }
     else if (taskl instanceof Function) {
-        return Promise.resolve(taskl(runner, parent || runner)).then(function (res) { return res && evaluateTask(res, runner, parent, name); });
+        var res = taskl(runner, parent);
+        return Promise.resolve(res).then(function (res) { return res && evaluateTask(res, runner, parent, name); });
     }
     else if (taskl) {
         var task_1 = taskl instanceof Task_1.default ? taskl : new Task_1.default(runner, taskl, name, parent);

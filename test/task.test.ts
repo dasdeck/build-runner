@@ -13,7 +13,7 @@ describe('basic', () => {
      */
     it('pure-entry-task', done => {
 
-        Runner.run( {
+        Runner.run({
             tasks: {
                 task1: [{src: 'test1.txt'}],
                 task2: () => [{src: 'test2.txt'}],
@@ -53,7 +53,7 @@ describe('basic', () => {
                         base,
                         src: '**/*',
                     }
-                });
+                })
             },
             output: (entries: Runner.Entry[], runner: Runner.Runner) => {
 

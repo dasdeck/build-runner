@@ -1,24 +1,27 @@
 
 declare class Zip {};
-import Entry from '../Entry';
-import Runner from '../Runner';
-import Task from '../Task';
+import Entry from './Entry';
+import Runner from './Runner';
+import Task from './Task';
 
 type EntrySet = Entry[];
 type PromisedEntries = Promise<EntrySet>
 type ResolvedEntrySet = Entry[];
 type OneOrMore<T> = T | T[];
-type TaskLike = TaskInterface | Function | any[];
+type TaskLike = TaskInterface | EntryLike[];
 type TaskList = { [s: string]: TaskLike; };
 type EntryResult = EntryLike | boolean | void;
 type PromisedEntryResult = Promise<EntryResult>;
+type GenericObject = { [key: string]: any };
 
 type Content = string|Buffer|Zip;
 
 type InputLike = Input|string;
 
+interface TaskFactory {(runner: Runner, parent?: Task):void|TaskLike | Promise<TaskLike|void>}
 interface Filter {(entry: Entry, runner: Runner):EntryResult|PromisedEntryResult}
 interface Output {(entries: EntrySet, runner: Runner, task: Task):EntryLike[] | Promise<EntryLike[]> | void | boolean}
+interface DynamicConfig {(parent: Task): GenericObject | void}
 
 interface EntryLike {
     src?: string
@@ -36,8 +39,7 @@ interface Input {
 }
 
 interface TaskInterface {
-    _task?:Task,
-    config?:any,
+    config?:GenericObject | DynamicConfig,
     dest?:string,
     base?:string, //shared base
     filter?:Filter,
@@ -49,6 +51,7 @@ interface TaskInterface {
     parallel?:boolean
 }
 
+
 export {
     Content,
     EntryLike,
@@ -58,11 +61,13 @@ export {
     ResolvedEntrySet,
     EntryResult,
     EntrySet,
+    GenericObject,
     Filter,
     OneOrMore,
     InputLike,
     Output,
     TaskList,
     TaskLike,
-    TaskInterface
+    TaskInterface,
+    TaskFactory
 }
