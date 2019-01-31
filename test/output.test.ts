@@ -58,7 +58,8 @@ describe('output', () => {
 
             output: (entries, runner, task) => {
                 expect(task.subEntries.length).not.toBe(0);
-                expect(task.entries.length).not.toBe(0);
+                expect(task.entries.length).toBe(0);
+                return task.subEntries;
             }
         }).then(({entries:{_root:entries}}) => {
 

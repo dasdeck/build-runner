@@ -1,5 +1,6 @@
-import * as Runner from '../src/Runner';
+import * as Runner from '../src';
 import * as path from 'path';
+import { ResolvedEntrySet } from '../src/interface';
 
 
 
@@ -107,6 +108,22 @@ describe('basic', () => {
         Runner.run({
             tasks: {
                 test: () => Promise.resolve()
+            }
+        }).then(() => {
+            done();
+        });
+
+    });
+
+    it ('full-name', done => {
+
+        Runner.run({
+            name: 'parent',
+            tasks: {
+                test: () => Promise.resolve({}),
+            },
+            output(e: ResolvedEntrySet, r: Runner.Runner, t: Runner.Task) {
+                expect(r.tasks.test.fullName).toBe('parent.test');
             }
         }).then(() => {
             done();

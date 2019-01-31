@@ -10,6 +10,7 @@ import {TaskLike, EntrySet, PromisedEntries, ResolvedEntrySet, PromisedEntryResu
 export default class Runner {
     entries: { [s: string]: ResolvedEntrySet; } = {}
     tasks: { [s: string]: Task; } = {}
+    taskTree: { [s: string]: Task; } = {}
     _config: any = {}
 
     constructor(config: any = {}) {
@@ -17,7 +18,14 @@ export default class Runner {
     }
 
     startTask(task: Task) {
+
+        if (this.tasks[task.name]) {
+            console.warn(`task '${task.name}' already exists`);
+        }
+
+        this.taskTree[task.fullName] = task;
         this.tasks[task.name] = task;
+        this.log('starting task:', task.name);
     }
 
     endTask(task: Task) {
@@ -27,7 +35,6 @@ export default class Runner {
     get config() {
         return this._config;
     }
-
 
     log(...args: any) {
         if (this.config.verbose) {
@@ -64,7 +71,7 @@ function resolvePath(src: string, input: Input, task: Task = new Task(new Runner
             const base = input.base || task.base;
             const dest = input.dest || task.dest;
             return Promise.resolve(res).then(res => Promise.all(res)).then(res => res.map((data: any) => new Entry(data).inDest(dest))).catch(err => {
-                throw `error in task ${task.name}.input : ${err}`;
+                throw `error in task ${task.fullName}.input : ${err}`;
             });
         }
     }
@@ -133,7 +140,7 @@ function outputEntries(entries: ResolvedEntrySet, task: Task, runner: Runner): P
 
     }).catch(err => {
 
-        throw `Error in task ${task.name}.output : ${err}`;
+        throw `Error in task ${task.fullName}.output : ${err}`;
 
     })
 }
@@ -155,7 +162,7 @@ function filterEntries(entries: PromisedEntries, input:InputLike, task: Task, ru
             }
 
         })).then(res => res.filter(v => v))).catch(err => {
-            throw `Error in task ${task.name}.filter : ${err}`
+            throw `Error in task ${task.fullName}.filter : ${err}`
         });
 
     } else {
@@ -171,6 +178,7 @@ function evaluateEntries(entries: EntrySet, task:Task, runner:Runner, name?: str
             throw 'entry should be resolved before logging';
         }
 
+        task.entries = entries;
         logEntries(entries, runner, name);
         return entries;
     });

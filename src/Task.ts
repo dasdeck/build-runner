@@ -15,9 +15,11 @@ export default class Task implements TaskInterface {
     parent?:Task
     parallel?:boolean
     runner: Runner
+    entries: ResolvedEntrySet = []
 
     constructor(runner: Runner, data: any, name: string = '_root', parent?: Task) {
 
+        data._task = this;
         this.runner = runner;
         this.name = name;
         this.parent = parent;
@@ -30,17 +32,27 @@ export default class Task implements TaskInterface {
         this._config = conf;
     }
 
-    get config(): any {
-        return Object.assign(this.parent && this.parent.config || Object.assign({}, this.runner.config), this._config);
+    get fullName(): string {
+        return (this.parent && (this.parent.fullName + '.') || '')  + this.name;
     }
 
-    get entries(): ResolvedEntrySet {
-        return this.runner.entries[this.name];
+    get config(): any {
+
+        const parentConfig = this.parent && this.parent.config || this.runner._config || {};
+
+        let config = this._config;
+        if (typeof this._config === 'function') {
+            config = config(this.parent);
+        }
+
+        return Object.assign(parentConfig, config);
+
     }
 
     get subEntries(): ResolvedEntrySet {
         if (this.tasks) {
-            return Object.keys(this.tasks).reduce((res: ResolvedEntrySet, name) => res.concat(this.runner.entries[name]), [])
+            debugger
+            return Object.keys(this.tasks).reduce((res: ResolvedEntrySet, name) => res.concat((<Task>(<TaskInterface>(<TaskList>this.tasks)[name])._task).entries), [])
         } else {
             return [];
         }

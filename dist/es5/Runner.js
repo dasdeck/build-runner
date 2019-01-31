@@ -13,11 +13,17 @@ var Runner = /** @class */ (function () {
         if (config === void 0) { config = {}; }
         this.entries = {};
         this.tasks = {};
+        this.taskTree = {};
         this._config = {};
         this._config = config;
     }
     Runner.prototype.startTask = function (task) {
+        if (this.tasks[task.name]) {
+            console.warn("task '" + task.name + "' already exists");
+        }
+        this.taskTree[task.fullName] = task;
         this.tasks[task.name] = task;
+        this.log('starting task:', task.name);
     };
     Runner.prototype.endTask = function (task) {
     };
@@ -64,7 +70,7 @@ function resolvePath(src, input, task) {
             var base = input.base || task.base;
             var dest_1 = input.dest || task.dest;
             return { value: Promise.resolve(res).then(function (res) { return Promise.all(res); }).then(function (res) { return res.map(function (data) { return new Entry_1.default(data).inDest(dest_1); }); }).catch(function (err) {
-                    throw "error in task " + task.name + ".input : " + err;
+                    throw "error in task " + task.fullName + ".input : " + err;
                 }) };
         }
     };
@@ -124,7 +130,7 @@ function outputEntries(entries, task, runner) {
             return entries;
         }
     }).catch(function (err) {
-        throw "Error in task " + task.name + ".output : " + err;
+        throw "Error in task " + task.fullName + ".output : " + err;
     });
 }
 function filterEntries(entries, input, task, runner) {
@@ -139,7 +145,7 @@ function filterEntries(entries, input, task, runner) {
                 return Promise.resolve(res).then(Entry_1.default.forceEntry);
             }
         })).then(function (res) { return res.filter(function (v) { return v; }); }); }).catch(function (err) {
-            throw "Error in task " + task.name + ".filter : " + err;
+            throw "Error in task " + task.fullName + ".filter : " + err;
         });
     }
     else {
@@ -151,6 +157,7 @@ function evaluateEntries(entries, task, runner, name) {
         if (entries.find(function (entry) { return entry instanceof Promise; })) {
             throw 'entry should be resolved before logging';
         }
+        task.entries = entries;
         logEntries(entries, runner, name);
         return entries;
     });

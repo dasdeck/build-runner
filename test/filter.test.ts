@@ -1,4 +1,4 @@
-import * as Runner from '../src/Runner';
+import * as Runner from '../src';
 import * as path from 'path';
 
 
@@ -6,13 +6,15 @@ describe('filter', () => {
 
     it('promised-filter-result', done => {
 
-        Runner.filterInput({
-            base: path.join(__dirname, 'content'),
-            src: 'test1.txt',
-            filter: (entry: Runner.Entry) => new Promise(res => res(entry))
-        }).then((entries: Runner.Entry[]) => {
+        Runner.run({
+            input: {
+                base: path.join(__dirname, 'content'),
+                src: 'test1.txt',
+                filter: (entry: Runner.Entry) => new Promise(res => res(entry))
+            }
+        }).then((runner: Runner.Runner) => {
 
-            expect(entries[0].dest).toBe('test1.txt');
+            expect(runner.entries._root[0].dest).toBe('test1.txt');
             done();
 
         });
@@ -20,13 +22,13 @@ describe('filter', () => {
     });
 
     it('ensure-entry-objects-after-filtering', done => {
-        Runner.filterInput({
+        Runner.run({input: {
             base: path.join(__dirname, 'content'),
             src: 'test1.txt',
             filter: (entry: Runner.Entry) => ({...entry, src: 'renamed.txt'})
-        }).then((entries: Runner.Entry[]) => {
+        }}).then((runner:Runner.Runner) => {
 
-            expect(entries[0]).toBeInstanceOf(Runner.Entry);
+            expect(runner.entries._root[0]).toBeInstanceOf(Runner.Entry);
             done();
 
         });
@@ -34,13 +36,13 @@ describe('filter', () => {
 
     it('change-name', done => {
 
-        Runner.filterInput({
+        Runner.run({input: {
             base: path.join(__dirname, 'content'),
             src: 'test1.txt',
             filter: (entry: Runner.Entry) => new Runner.Entry({...entry, dest: 'renamed.txt'})
-        }).then((entries: Runner.Entry[]) => {
+        }}).then((runner: Runner.Runner) => {
 
-            expect(entries[0].dest).toBe('renamed.txt');
+            expect(runner.entries._root[0].dest).toBe('renamed.txt');
             done();
 
         });
@@ -48,13 +50,14 @@ describe('filter', () => {
 
     it('filter-out-entry', done => {
 
-        Runner.filterInput({
+        Runner.run({
+            input: {
             base: path.join(__dirname, 'content'),
             src: 'test1.txt',
             filter: (entry: Runner.Entry) => false
-        }).then((entries: Runner.Entry[]) => {
+        }}).then((runner: Runner.Runner) => {
 
-            expect(entries.length).toBe(0);
+            expect(runner.entries._root.length).toBe(0);
             done();
 
         });

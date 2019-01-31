@@ -1,4 +1,4 @@
-import {run, Runner} from '../src/Runner';
+import {run, Runner, Task} from '../src';
 
 describe('config', () => {
 
@@ -21,6 +21,29 @@ describe('config', () => {
 
     });
 
+    it('dynamic-config', done => {
+
+        run({
+            config: (parent: Task) => {
+                expect(parent).toBeFalsy();
+                return {
+                    test1: 1
+                };
+            },
+            tasks: {
+                sub1: {
+                    config: (parent: Task) => {
+                        expect(parent.name).toBe('_root');
+                        expect(parent.config.test1).toBe(1);
+                        return {
+
+                        };
+                    }
+                }
+            }
+        }).then(() => done());
+    });
+
     it('override-config-locally', done => {
 
         run({
@@ -29,7 +52,7 @@ describe('config', () => {
             },
 
             tasks: {
-                task1: {
+                task1: () => ({
                     config: {
                         test: 2
                     },
@@ -37,12 +60,26 @@ describe('config', () => {
                     tasks: {
                         task2(runner: Runner, {config}: {config:any}) {
                             expect(config.test).toBe(2);
+
+                            return {
+                                name: 'p1',
+                                tasks: {
+                                    task4(runner: Runner, parent: Task) {
+                                        expect(parent.name).toBe('p1');
+                                        expect(parent.config.test).toBe(2);
+                                    }
+                                }
+                            }
                         }
                     },
-                    output(entries, runner, {config}) {
+                    output(entries: [], runner: Runner, {config}: {config: any}) {
                         expect(config.test).toBe(2);
                         return [{src: 'test1'}]
                     }
+                }),
+
+                task3(runner: Runner, {config}: {config: any}) {
+                    expect(config.test).toBe(1);
                 }
             },
 

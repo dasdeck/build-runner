@@ -36,6 +36,7 @@ interface Input {
 }
 
 interface TaskInterface {
+    _task?:Task,
     config?:any,
     dest?:string,
     base?:string, //shared base

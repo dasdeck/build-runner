@@ -7,3 +7,5 @@ exports.Runner = Runner_1.default;
 exports.run = Runner_1.run;
 var Entry_1 = require("./Entry");
 exports.Entry = Entry_1.default;
+var Task_1 = require("./Task");
+exports.Task = Task_1.default;

@@ -69,5 +69,26 @@ describe('error', () => {
 
     });
 
+    it('output error', done => {
+
+        run({
+
+            input: '**/*',
+            tasks: {
+                test: {
+                    output: () => {throw 'err'}
+                }
+            }
+
+        }).catch(err => {
+
+            expect(err).toContain('_root.test.output');
+            expect(err).toContain(': err');
+            done();
+
+        });
+
+    });
+
 
 });

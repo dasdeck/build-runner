@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var Task = /** @class */ (function () {
     function Task(runner, data, name, parent) {
         if (name === void 0) { name = '_root'; }
+        this.entries = [];
+        data._task = this;
         this.runner = runner;
         this.name = name;
         this.parent = parent;
@@ -10,7 +12,12 @@ var Task = /** @class */ (function () {
     }
     Object.defineProperty(Task.prototype, "config", {
         get: function () {
-            return Object.assign(this.parent && this.parent.config || Object.assign({}, this.runner.config), this._config);
+            var parentConfig = this.parent && this.parent.config || this.runner._config || {};
+            var config = this._config;
+            if (typeof this._config === 'function') {
+                config = config(this.parent);
+            }
+            return Object.assign(parentConfig, config);
         },
         set: function (conf) {
             this._config = conf;
@@ -18,9 +25,9 @@ var Task = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(Task.prototype, "entries", {
+    Object.defineProperty(Task.prototype, "fullName", {
         get: function () {
-            return this.runner.entries[this.name];
+            return (this.parent && (this.parent.fullName + '.') || '') + this.name;
         },
         enumerable: true,
         configurable: true
@@ -29,7 +36,8 @@ var Task = /** @class */ (function () {
         get: function () {
             var _this = this;
             if (this.tasks) {
-                return Object.keys(this.tasks).reduce(function (res, name) { return res.concat(_this.runner.entries[name]); }, []);
+                debugger;
+                return Object.keys(this.tasks).reduce(function (res, name) { return res.concat(_this.tasks[name]._task.entries); }, []);
             }
             else {
                 return [];
