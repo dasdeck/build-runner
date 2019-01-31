@@ -71,7 +71,7 @@ function resolvePath(src: string, input: Input, task: Task = new Task(new Runner
             const base = input.base || task.base;
             const dest = input.dest || task.dest;
             return Promise.resolve(res).then(res => Promise.all(res)).then(res => res.map((data: any) => new Entry(data).inDest(dest))).catch(err => {
-                throw `error in task ${task.fullName}.input : ${err}`;
+                throw `Error in task ${task.fullName}.input : ${err} \n ${err.stack}`;
             });
         }
     }
@@ -140,7 +140,7 @@ function outputEntries(entries: ResolvedEntrySet, task: Task, runner: Runner): P
 
     }).catch(err => {
 
-        throw `Error in task ${task.fullName}.output : ${err}`;
+        throw `Error in task ${task.fullName}.output : ${err} \n ${err.stack}`;
 
     })
 }
@@ -162,7 +162,7 @@ function filterEntries(entries: PromisedEntries, input:InputLike, task: Task, ru
             }
 
         })).then(res => res.filter(v => v))).catch(err => {
-            throw `Error in task ${task.fullName}.filter : ${err}`
+            throw `Error in task ${task.fullName}.filter : ${err} \n ${err.stack}`
         });
 
     } else {
@@ -171,7 +171,7 @@ function filterEntries(entries: PromisedEntries, input:InputLike, task: Task, ru
 
 }
 
-function evaluateEntries(entries: EntrySet, task:Task, runner:Runner, name?: string):PromisedEntries {
+function evaluateEntries(entries: EntrySet, task:Task, runner:Runner):PromisedEntries {
     return Promise.all(entries).then(entries => outputEntries(entries, task, runner)).then((entries: any[]) => {
 
         if(entries.find(entry => entry instanceof Promise)) {
@@ -179,17 +179,21 @@ function evaluateEntries(entries: EntrySet, task:Task, runner:Runner, name?: str
         }
 
         task.entries = entries;
-        logEntries(entries, runner, name);
+        logEntries(entries, runner, task.name);
         return entries;
     });
 }
 
-function evaluateTask(taskl: TaskLike, runner: Runner, parent?: Task, name?:string):PromisedEntries {
+function evaluateTask(taskl: TaskLike, runner: Runner, parent?: Task, name:string = '_root'):PromisedEntries {
 
     if (taskl instanceof Array) {
 
         runner.log('starting task:' + name);
-        return evaluateEntries(taskl.map(data => new Entry(data)), new Task(runner, {}, name, parent), runner, name);
+        const task = new Task(runner, {}, name, parent);
+        if (parent) {
+            parent.tasks[name] = task;
+        }
+        return evaluateEntries(taskl.map(data => new Entry(data)), task, runner);
 
     } else if (taskl instanceof Function) {
 
@@ -198,7 +202,9 @@ function evaluateTask(taskl: TaskLike, runner: Runner, parent?: Task, name?:stri
     } else if (taskl) {
 
         const task:Task = taskl instanceof Task ?  taskl : new Task(runner, taskl, name, parent);
-
+        if (parent) {
+            parent.tasks[name] = task;
+        }
         runner.startTask(task);
 
         return resolveTasks(task, runner).then(() => {
@@ -207,7 +213,7 @@ function evaluateTask(taskl: TaskLike, runner: Runner, parent?: Task, name?:stri
 
             return Promise.all(inputs.map(input => filterInput(input, task, runner)))
             .then(inputsSets => inputsSets.reduce((res, set) => res.concat(set), []))
-            .then(entries => evaluateEntries(entries, task, runner, name));
+            .then(entries => evaluateEntries(entries, task, runner));
 
         });
 
@@ -219,7 +225,7 @@ function evaluateTask(taskl: TaskLike, runner: Runner, parent?: Task, name?:stri
 
 function run(task:TaskLike, config:any = {}, runner: Runner = new Runner(config)):Promise<Runner> {
 
-    return evaluateTask(task, runner, undefined, '_root').then(() => runner);
+    return evaluateTask(task, runner, undefined).then(() => runner);
 }
 
 export {

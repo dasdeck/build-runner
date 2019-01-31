@@ -10,7 +10,7 @@ export default class Task implements TaskInterface {
     filter?:Filter
     input?:OneOrMore<InputLike>
     output?:Output
-    tasks?:TaskList
+    tasks:TaskList = {}
     name:string
     parent?:Task
     parallel?:boolean
@@ -19,7 +19,6 @@ export default class Task implements TaskInterface {
 
     constructor(runner: Runner, data: any, name: string = '_root', parent?: Task) {
 
-        data._task = this;
         this.runner = runner;
         this.name = name;
         this.parent = parent;
@@ -51,8 +50,7 @@ export default class Task implements TaskInterface {
 
     get subEntries(): ResolvedEntrySet {
         if (this.tasks) {
-            debugger
-            return Object.keys(this.tasks).reduce((res: ResolvedEntrySet, name) => res.concat((<Task>(<TaskInterface>(<TaskList>this.tasks)[name])._task).entries), [])
+            return Object.keys(this.tasks).reduce((res: ResolvedEntrySet, name) => res.concat((<Task>(<TaskList>this.tasks)[name]).entries), [])
         } else {
             return [];
         }

@@ -70,7 +70,7 @@ function resolvePath(src, input, task) {
             var base = input.base || task.base;
             var dest_1 = input.dest || task.dest;
             return { value: Promise.resolve(res).then(function (res) { return Promise.all(res); }).then(function (res) { return res.map(function (data) { return new Entry_1.default(data).inDest(dest_1); }); }).catch(function (err) {
-                    throw "error in task " + task.fullName + ".input : " + err;
+                    throw "Error in task " + task.fullName + ".input : " + err + " \n " + err.stack;
                 }) };
         }
     };
@@ -130,7 +130,7 @@ function outputEntries(entries, task, runner) {
             return entries;
         }
     }).catch(function (err) {
-        throw "Error in task " + task.fullName + ".output : " + err;
+        throw "Error in task " + task.fullName + ".output : " + err + " \n " + err.stack;
     });
 }
 function filterEntries(entries, input, task, runner) {
@@ -145,39 +145,47 @@ function filterEntries(entries, input, task, runner) {
                 return Promise.resolve(res).then(Entry_1.default.forceEntry);
             }
         })).then(function (res) { return res.filter(function (v) { return v; }); }); }).catch(function (err) {
-            throw "Error in task " + task.fullName + ".filter : " + err;
+            throw "Error in task " + task.fullName + ".filter : " + err + " \n " + err.stack;
         });
     }
     else {
         return entries;
     }
 }
-function evaluateEntries(entries, task, runner, name) {
+function evaluateEntries(entries, task, runner) {
     return Promise.all(entries).then(function (entries) { return outputEntries(entries, task, runner); }).then(function (entries) {
         if (entries.find(function (entry) { return entry instanceof Promise; })) {
             throw 'entry should be resolved before logging';
         }
         task.entries = entries;
-        logEntries(entries, runner, name);
+        logEntries(entries, runner, task.name);
         return entries;
     });
 }
 function evaluateTask(taskl, runner, parent, name) {
+    if (name === void 0) { name = '_root'; }
     if (taskl instanceof Array) {
         runner.log('starting task:' + name);
-        return evaluateEntries(taskl.map(function (data) { return new Entry_1.default(data); }), new Task_1.default(runner, {}, name, parent), runner, name);
+        var task = new Task_1.default(runner, {}, name, parent);
+        if (parent) {
+            parent.tasks[name] = task;
+        }
+        return evaluateEntries(taskl.map(function (data) { return new Entry_1.default(data); }), task, runner);
     }
     else if (taskl instanceof Function) {
         return Promise.resolve(taskl(runner, parent || runner)).then(function (res) { return res && evaluateTask(res, runner, parent, name); });
     }
     else if (taskl) {
         var task_1 = taskl instanceof Task_1.default ? taskl : new Task_1.default(runner, taskl, name, parent);
+        if (parent) {
+            parent.tasks[name] = task_1;
+        }
         runner.startTask(task_1);
         return resolveTasks(task_1, runner).then(function () {
             var inputs = task_1.input instanceof Array ? task_1.input : task_1.input && [task_1.input] || [];
             return Promise.all(inputs.map(function (input) { return filterInput(input, task_1, runner); }))
                 .then(function (inputsSets) { return inputsSets.reduce(function (res, set) { return res.concat(set); }, []); })
-                .then(function (entries) { return evaluateEntries(entries, task_1, runner, name); });
+                .then(function (entries) { return evaluateEntries(entries, task_1, runner); });
         });
     }
     return Promise.resolve([]);
@@ -186,6 +194,6 @@ exports.evaluateTask = evaluateTask;
 function run(task, config, runner) {
     if (config === void 0) { config = {}; }
     if (runner === void 0) { runner = new Runner(config); }
-    return evaluateTask(task, runner, undefined, '_root').then(function () { return runner; });
+    return evaluateTask(task, runner, undefined).then(function () { return runner; });
 }
 exports.run = run;

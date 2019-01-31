@@ -2,6 +2,7 @@ import * as Runner from '../src';
 import * as path from 'path';
 import { ResolvedEntrySet } from '../src/interface';
 
+const base = path.join(__dirname, 'content');
 
 
 describe('basic', () => {
@@ -45,7 +46,6 @@ describe('basic', () => {
      */
     it('dynamic-task', done => {
 
-        const base = path.join(__dirname, 'content');
         Runner.run({
             tasks: {
                 task1: (runner: Runner.Runner) => ({
@@ -53,7 +53,7 @@ describe('basic', () => {
                         base,
                         src: '**/*',
                     }
-                })
+                });
             },
             output: (entries: Runner.Entry[], runner: Runner.Runner) => {
 
@@ -126,6 +126,24 @@ describe('basic', () => {
                 expect(r.tasks.test.fullName).toBe('parent.test');
             }
         }).then(() => {
+            done();
+        });
+
+    });
+
+    it ('custom-name', done => {
+
+        Runner.run({
+            tasks: {
+                t1: {
+                    base,
+                    name: 'task1',
+                    input: '**/*'
+                }
+            }
+        }).then(runner => {
+            expect(runner.tasks.task1).not.toBeUndefined();
+            expect(runner.entries.task1).not.toBeUndefined();
             done();
         });
 

@@ -3,8 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var Task = /** @class */ (function () {
     function Task(runner, data, name, parent) {
         if (name === void 0) { name = '_root'; }
+        this.tasks = {};
         this.entries = [];
-        data._task = this;
         this.runner = runner;
         this.name = name;
         this.parent = parent;
@@ -36,8 +36,7 @@ var Task = /** @class */ (function () {
         get: function () {
             var _this = this;
             if (this.tasks) {
-                debugger;
-                return Object.keys(this.tasks).reduce(function (res, name) { return res.concat(_this.tasks[name]._task.entries); }, []);
+                return Object.keys(this.tasks).reduce(function (res, name) { return res.concat(_this.tasks[name].entries); }, []);
             }
             else {
                 return [];
