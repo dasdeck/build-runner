@@ -1,39 +1,35 @@
 import * as glob from 'glob';
 import * as path from 'path';
 import * as request from 'request-promise-native';
-import {resolver} from './util';
+import {resolver, map} from './util';
 import Entry from './Entry';
 import Task from './Task';
-import {GenericObject, TaskFactory, TaskLike, EntrySet, PromisedEntries, PromisedEntryResult, Input, InputLike, EntryResult, TaskInterface} from './interface';
+import {GenericObject, TaskFactory, TaskLike, EntrySet, PromisedEntries, PromisedEntryResult, Input, InputLike, EntryResult, TaskInterface, Logger} from './interface';
 
-function map<T=any>(objOrArray: GenericObject | T[], cb: any): T[] {
-    if (objOrArray instanceof Array) {
-        return objOrArray.map(cb);
-    } else {
-        return Object.keys(objOrArray).map(key => cb(objOrArray[key], key));
-    }
-}
+
 export default class Runner {
 
     entries: { [s: string]: EntrySet; } = {}
     tasks: { [s: string]: Task; } = {}
     taskTree: { [s: string]: Task; } = {}
     _config: GenericObject = {}
+    logger: Logger
 
     constructor(config: GenericObject = {home: process.cwd()}) {
         this._config = config;
+        this.logger = new Logger(config.log)
     }
 
     startTask(task: Task) {
 
         if (this.tasks[task.name]) {
-            console.warn(`taskname '${task.name}' (${task.fullName}) already exists, named access (runner.tasks[${task.name}]) will be ambigus`);
+            this.logger.warn(`taskname '${task.name}' (${task.fullName}) already exists, named access (runner.tasks[${task.name}]) will be ambigus`);
         }
 
         this.taskTree[task.fullName] = task;
         this.tasks[task.name] = task;
 
-        this.log('starting task:', task.fullName);
+        this.logger.log('starting task:', task.fullName);
     }
 
     loadConfig(p: string):TaskInterface|TaskFactory {
@@ -47,37 +43,11 @@ export default class Runner {
 
     endTask(task: Task) {
 
-        this.log('ending task:', task.fullName);
+        this.logger.log('ending task:', task.fullName);
     }
 
     get config() {
         return this._config;
-    }
-
-    log(...args: any) {
-
-
-        const logger = (...args: any) => {
-            // if (this.config.verbose === 3) {
-                console.log(...args);
-            // }
-        }
-
-        if (args.length) {
-            logger(...args)
-        }
-
-        logger.log = logger;
-
-        // if (this.config.verbose === 2) {
-            logger.warn = (...args: any) => {
-                if (this.config.verbose === 3) {
-                    console.log(...args);
-                }
-            }
-        // }
-
-        return logger;
     }
 
 }

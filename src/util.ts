@@ -1,4 +1,5 @@
-interface LazyPromise<T=any> {():Promise<T>}
+import { GenericObject, LazyPromise } from "./interface";
+
 
 function resolver(promises: LazyPromise[], parallel?:boolean):Promise<any> {
 
@@ -10,6 +11,15 @@ function resolver(promises: LazyPromise[], parallel?:boolean):Promise<any> {
     }
 }
 
+function map<T=any>(objOrArray: GenericObject | T[], cb: any): T[] {
+    if (objOrArray instanceof Array) {
+        return objOrArray.map(cb);
+    } else {
+        return Object.keys(objOrArray).map(key => cb(objOrArray[key], key));
+    }
+}
+
 export {
+    map,
     resolver
 }

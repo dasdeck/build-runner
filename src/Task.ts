@@ -1,10 +1,10 @@
 
 
-import {TaskInterface, Filter, OneOrMore, InputLike, Output, TaskList, EntrySet, GenericObject} from './interface';
+import {TaskInterface, Filter, OneOrMore, InputLike, Output, TaskList, EntrySet, GenericObject, DynamicConfig} from './interface';
 import {Runner} from '.';
 export default class Task implements TaskInterface {
 
-    _config?:any
+    _config?:GenericObject | DynamicConfig
     dest?:string
     _base?:string //shared base
     filter?:Filter
@@ -42,7 +42,7 @@ export default class Task implements TaskInterface {
         return this._base || this.config.base;
     }
 
-    set config(conf) {
+    set config(conf: GenericObject) {
         this._config = conf;
     }
 
@@ -51,8 +51,11 @@ export default class Task implements TaskInterface {
         const parentConfig = this.parent && this.parent.config || this.runner._config || {};
 
         let config = this._config;
-        if (typeof this._config === 'function') {
-            config = config(this.parent);
+        if (typeof config === 'function') {
+            const res = (config as DynamicConfig)(this.parent);
+            if (res) {
+                config = res;
+            }
         }
 
         return Object.assign(parentConfig, config);

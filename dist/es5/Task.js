@@ -32,8 +32,11 @@ var Task = /** @class */ (function () {
         get: function () {
             var parentConfig = this.parent && this.parent.config || this.runner._config || {};
             var config = this._config;
-            if (typeof this._config === 'function') {
-                config = config(this.parent);
+            if (typeof config === 'function') {
+                var res = config(this.parent);
+                if (res) {
+                    config = res;
+                }
             }
             return Object.assign(parentConfig, config);
         },

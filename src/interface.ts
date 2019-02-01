@@ -40,7 +40,7 @@ interface Input {
 type InputLike = Input|string;
 
 interface Output {(entries: EntrySet, runner: Runner, task: Task):EntryLike[] | Promise<EntryLike[]> | void | boolean}
-interface DynamicConfig {(parent: Task): GenericObject | void}
+interface DynamicConfig {(parent?: Task): GenericObject | void}
 
 interface TaskInterface {
     config?:GenericObject | DynamicConfig,
@@ -55,12 +55,35 @@ interface TaskInterface {
     parallel?:boolean
 }
 
+interface LazyPromise<T=any> {():Promise<T>}
+
+interface LoggerConfig {
+    level?: number
+}
+class Logger {
+    log: Function = () => {}
+    info: Function = () => {}
+    warn: Function = () => {}
+    error: Function = () => {}
+    logLevels: string[] = ['log', 'info', 'warn', 'error']
+
+    constructor(config: LoggerConfig = {}) {
+        this.logLevels.forEach((name, i:number) => {
+            if (i < (config.level || 0)) {
+                (this as any)[name] = (console as any)[name];
+            }
+        })
+    }
+}
 
 export {
+    Logger,
     Content,
     EntryLike,
     PromisedEntries,
+    DynamicConfig,
     Input,
+    LazyPromise,
     PromisedEntryResult,
     EntryResult,
     EntrySet,

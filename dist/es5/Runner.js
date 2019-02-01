@@ -6,14 +6,7 @@ var request = require("request-promise-native");
 var util_1 = require("./util");
 var Entry_1 = require("./Entry");
 var Task_1 = require("./Task");
-function map(objOrArray, cb) {
-    if (objOrArray instanceof Array) {
-        return objOrArray.map(cb);
-    }
-    else {
-        return Object.keys(objOrArray).map(function (key) { return cb(objOrArray[key], key); });
-    }
-}
+var interface_1 = require("./interface");
 var Runner = /** @class */ (function () {
     function Runner(config) {
         if (config === void 0) { config = { home: process.cwd() }; }
@@ -22,14 +15,15 @@ var Runner = /** @class */ (function () {
         this.taskTree = {};
         this._config = {};
         this._config = config;
+        this.logger = new interface_1.Logger(config.log);
     }
     Runner.prototype.startTask = function (task) {
         if (this.tasks[task.name]) {
-            console.warn("taskname '" + task.name + "' (" + task.fullName + ") already exists, named access (runner.tasks[" + task.name + "]) will be ambigus");
+            this.logger.warn("taskname '" + task.name + "' (" + task.fullName + ") already exists, named access (runner.tasks[" + task.name + "]) will be ambigus");
         }
         this.taskTree[task.fullName] = task;
         this.tasks[task.name] = task;
-        this.log('starting task:', task.fullName);
+        this.logger.log('starting task:', task.fullName);
     };
     Runner.prototype.loadConfig = function (p) {
         // return require(p);
@@ -39,7 +33,7 @@ var Runner = /** @class */ (function () {
         return require(p);
     };
     Runner.prototype.endTask = function (task) {
-        this.log('ending task:', task.fullName);
+        this.logger.log('ending task:', task.fullName);
     };
     Object.defineProperty(Runner.prototype, "config", {
         get: function () {
@@ -48,38 +42,6 @@ var Runner = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
-    Runner.prototype.log = function () {
-        var _this = this;
-        var args = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            args[_i] = arguments[_i];
-        }
-        var logger = function () {
-            var args = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                args[_i] = arguments[_i];
-            }
-            // if (this.config.verbose === 3) {
-            console.log.apply(console, args);
-            // }
-        };
-        if (args.length) {
-            logger.apply(void 0, args);
-        }
-        logger.log = logger;
-        // if (this.config.verbose === 2) {
-        logger.warn = function () {
-            var args = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                args[_i] = arguments[_i];
-            }
-            if (_this.config.verbose === 3) {
-                console.log.apply(console, args);
-            }
-        };
-        // }
-        return logger;
-    };
     return Runner;
 }());
 exports.Runner = Runner;
@@ -136,7 +98,7 @@ function filterInput(input, task, runner) {
 }
 function resolveTasks(parent, runner) {
     if (parent.tasks) {
-        return util_1.resolver(map(parent.tasks, function (task, name) { return function () { return evaluateTask(task, runner, parent, {}, name); }; }), parent.parallel);
+        return util_1.resolver(util_1.map(parent.tasks, function (task, name) { return function () { return evaluateTask(task, runner, parent, {}, name); }; }), parent.parallel);
     }
     else {
         return Promise.resolve([]);

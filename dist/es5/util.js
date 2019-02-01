@@ -10,3 +10,12 @@ function resolver(promises, parallel) {
     }
 }
 exports.resolver = resolver;
+function map(objOrArray, cb) {
+    if (objOrArray instanceof Array) {
+        return objOrArray.map(cb);
+    }
+    else {
+        return Object.keys(objOrArray).map(function (key) { return cb(objOrArray[key], key); });
+    }
+}
+exports.map = map;
