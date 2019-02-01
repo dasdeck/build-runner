@@ -10,11 +10,11 @@ describe('config', () => {
 
         const config = {
             tasks: {
-                test: (runner: Runner) => [{content: 'config', data: runner._config}]
+                test: (_: any, runner: Runner) => ({output: () => [{content: 'config', data: runner._config}]})
             }
         }
 
-        run(config).then(runner => {
+        run(config).then((runner:Runner) => {
             expect((<any>runner.entries.test[0]).data).toBe(runner._config);
             done();
         })
@@ -59,7 +59,7 @@ describe('config', () => {
                     },
 
                     tasks: {
-                        task2(runner: Runner, parent) {
+                        task2(conf, runner: Runner, parent) {
                             if (parent) {
                                 expect(parent.config.test).toBe(2);
                             }
@@ -67,10 +67,10 @@ describe('config', () => {
                             return {
                                 name: 'p1',
                                 tasks: {
-                                    task4(runner: Runner, parent) {
+                                    task4(conf, runner: Runner, parent) {
                                         if (parent) {
                                             expect(parent.name).toBe('p1');
-                                            expect(parent.config.test).toBe(2);
+                                            expect(conf.test).toBe(2);
                                         }
                                     }
                                 }
@@ -83,7 +83,7 @@ describe('config', () => {
                     }
                 }),
 
-                task3(runner: Runner, parent) {
+                task3(conf, runner: Runner, parent) {
                     if (parent) {
                         expect(parent.config.test).toBe(1);
                     }

@@ -10,7 +10,7 @@
     "@types/adm-zip": "^0.4.31",
     "@types/glob": "^7.1.1",
     "@types/jest": "^23.3.12",
-    "@types/node": "^10.12.18",
+    "@types/node": "^10.12.21",
     "@types/request-promise-native": "^1.0.15",
     "adm-zip": "^0.4.13",
     "async": "^2.6.1",

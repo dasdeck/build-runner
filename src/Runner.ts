@@ -4,9 +4,15 @@ import * as request from 'request-promise-native';
 import {resolver} from './util';
 import Entry from './Entry';
 import Task from './Task';
-import {GenericObject, TaskFactory, TaskLike, EntrySet, PromisedEntries, PromisedEntryResult, Input, InputLike, EntryResult} from './interface';
+import {GenericObject, TaskFactory, TaskLike, EntrySet, PromisedEntries, PromisedEntryResult, Input, InputLike, EntryResult, TaskInterface} from './interface';
 
-
+function map<T=any>(objOrArray: GenericObject | T[], cb: any): T[] {
+    if (objOrArray instanceof Array) {
+        return objOrArray.map(cb);
+    } else {
+        return Object.keys(objOrArray).map(key => cb(objOrArray[key], key));
+    }
+}
 export default class Runner {
 
     entries: { [s: string]: EntrySet; } = {}
@@ -14,25 +20,34 @@ export default class Runner {
     taskTree: { [s: string]: Task; } = {}
     _config: GenericObject = {}
 
-    constructor(config: GenericObject = {}) {
+    constructor(config: GenericObject = {home: process.cwd()}) {
         this._config = config;
     }
 
     startTask(task: Task) {
 
         if (this.tasks[task.name]) {
-            console.warn(`task '${task.name}' already exists, named access (runner.tasks[name]) will be overwritten`);
+            console.warn(`taskname '${task.name}' (${task.fullName}) already exists, named access (runner.tasks[${task.name}]) will be ambigus`);
         }
 
         this.taskTree[task.fullName] = task;
         this.tasks[task.name] = task;
 
-        this.log('starting task:', task.name);
+        this.log('starting task:', task.fullName);
+    }
+
+    loadConfig(p: string):TaskInterface|TaskFactory {
+        // return require(p);
+        if (p[0] === '~') {
+            p = p.replace('~', this.config.home || process.cwd())
+        }
+        return require(p);
+
     }
 
     endTask(task: Task) {
 
-        this.log('ending task:', task.name);
+        this.log('ending task:', task.fullName);
     }
 
     get config() {
@@ -41,10 +56,11 @@ export default class Runner {
 
     log(...args: any) {
 
+
         const logger = (...args: any) => {
-            if (this.config.verbose === 3) {
+            // if (this.config.verbose === 3) {
                 console.log(...args);
-            }
+            // }
         }
 
         if (args.length) {
@@ -53,13 +69,13 @@ export default class Runner {
 
         logger.log = logger;
 
-        if (this.config.verbose === 2) {
+        // if (this.config.verbose === 2) {
             logger.warn = (...args: any) => {
                 if (this.config.verbose === 3) {
                     console.log(...args);
                 }
             }
-        }
+        // }
 
         return logger;
     }
@@ -128,7 +144,7 @@ function filterInput(input: InputLike, task: Task, runner: Runner = new Runner(t
 
 function resolveTasks(parent: Task, runner: Runner): PromisedEntries {
     if (parent.tasks) {
-        return resolver(Object.keys(parent.tasks).map(name => () => evaluateTask(parent.tasks ? parent.tasks[name] : {}, runner, parent, name)), parent.parallel)
+        return resolver(<any>map(parent.tasks, (task: TaskLike, name:string|number) => () => evaluateTask(task, runner, parent, {}, name)), parent.parallel)
     } else {
         return Promise.resolve([]);
     }
@@ -209,27 +225,34 @@ function evaluateEntries(entries: EntrySet, task:Task, runner:Runner):PromisedEn
 
 }
 
-function evaluateTask(taskl: TaskLike | TaskFactory, runner: Runner, parent?: Task, name:string = '_root'):PromisedEntries {
+function evaluateTask(taskl: TaskLike | TaskFactory, runner: Runner, parent?: Task, config: GenericObject= {}, name:string|number = '_root'):PromisedEntries {
+
+    if (typeof taskl === 'string') {
+        taskl = [taskl];
+    }
 
     if (taskl instanceof Array) {
 
-        runner.log('starting task:' + name);
-        const task = new Task(runner, {}, name, parent);
-        if (parent) {
-            parent.tasks[name] = task;
+        const [src, conf] = taskl;
+        const task = runner.loadConfig(src);
+
+        if (typeof name !== 'string') {
+            name = path.basename(src);
         }
-        return evaluateEntries(taskl.map(data => new Entry(data)), task, runner);
 
-    } else if (taskl instanceof Function) {
+        return evaluateTask(task, runner, parent, conf, name);
 
-        const res: any = taskl(runner, parent);
-        return Promise.resolve(res).then(res => res && evaluateTask(res, runner, parent, name));
+    } else if (typeof taskl === 'function') {
+
+        const evaluatedConfig = Object.assign({}, parent && parent.config || {}, config);
+        const res: any = taskl(evaluatedConfig, runner, parent);
+        return Promise.resolve(res).then(res => res && evaluateTask(res, runner, parent, {}, name));
 
     } else if (taskl) {
 
         const task:Task = taskl instanceof Task ?  taskl : new Task(runner, taskl, name, parent);
         if (parent) {
-            parent.tasks[name] = task;
+            parent.subTasks[task.name] = task;
         }
         runner.startTask(task);
 
@@ -246,19 +269,23 @@ function evaluateTask(taskl: TaskLike | TaskFactory, runner: Runner, parent?: Ta
             return entries;
         });
 
+    } else {
+
+        return Promise.resolve([]);
+
     }
 
-    return Promise.resolve([])
 
 }
 
 function run(task:TaskLike | TaskFactory, config:GenericObject = {}, runner: Runner = new Runner(config)):Promise<Runner> {
 
-    return evaluateTask(task, runner, undefined).then(() => runner);
+    return evaluateTask(task, runner).then(() => runner);
 }
 
-export {
 
+
+export {
     run,
     Runner
 

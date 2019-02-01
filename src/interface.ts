@@ -5,7 +5,8 @@ import Runner from './Runner';
 import Task from './Task';
 
 type OneOrMore<T> = T | T[];
-type GenericObject = { [key: string]: any };
+type GenericObject<T=any> = { [key: string]: T };
+type MaybePromise<T> = Promise<T|void> | T | void;
 
 type Content = string|Buffer|Zip;
 interface EntryLike {
@@ -20,11 +21,11 @@ type PromisedEntries = Promise<EntrySet>
 type EntryResult = EntryLike | boolean | void;
 type PromisedEntryResult = Promise<EntryResult>;
 
+type TaskReference = string | [string] | [string, GenericObject]
+type TaskLike = TaskInterface | TaskReference | TaskFactory;
+type TaskList = { [s: string]: TaskLike ; } | TaskLike[] ;
 
-type TaskLike = TaskInterface | EntryLike[];
-type TaskList = { [s: string]: TaskLike | TaskFactory; };
-
-interface TaskFactory {(runner: Runner, parent?: Task):void|TaskLike | Promise<TaskLike|void>}
+interface TaskFactory {(config: GenericObject, runner: Runner, parent?: Task):MaybePromise<TaskLike | EntrySet>}
 
 interface Filter {(entry: Entry, runner: Runner):EntryResult|PromisedEntryResult}
 

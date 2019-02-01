@@ -1,8 +1,52 @@
 import * as Runner from '../src';
 import * as path from 'path';
-import { EntrySet } from '../src/interface';
+import { EntrySet, TaskFactory, TaskInterface, TaskLike } from '../src/interface';
 
 describe('tasklist', () => {
+
+    let tmp: any;
+    let mockTask: TaskFactory;
+    let mockRequire: Function;
+
+    beforeAll(() => {
+        tmp = Runner.Runner.prototype.loadConfig;
+    });
+    beforeEach(() => {
+
+        mockTask = jest.fn();
+        mockRequire = jest.fn((path:string):TaskLike => {
+            return mockTask
+        });
+
+        Runner.Runner.prototype.loadConfig = mockRequire as any;
+    });
+
+    afterAll(() => {
+        Runner.Runner.prototype.loadConfig = tmp;
+    });
+
+    it('tasklist-shorthand', done => {
+
+        const anonTask = {
+
+        };
+        Runner.run({
+            tasks: [
+                anonTask,
+                'test',
+                {
+                    name: 'test3'
+                }
+            ]
+        }).then((runner: Runner.Runner) => {
+
+            expect(runner.tasks.task1).not.toBeUndefined()
+            expect(mockTask).toBeCalledWith({}, runner, runner.tasks._root);
+            expect(mockRequire).toHaveBeenCalledWith('test');
+            done();
+        })
+    });
+
 
     it('serial-processing-of-sub-tasks', done => {
 

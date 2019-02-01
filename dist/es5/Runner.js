@@ -6,9 +6,17 @@ var request = require("request-promise-native");
 var util_1 = require("./util");
 var Entry_1 = require("./Entry");
 var Task_1 = require("./Task");
+function map(objOrArray, cb) {
+    if (objOrArray instanceof Array) {
+        return objOrArray.map(cb);
+    }
+    else {
+        return Object.keys(objOrArray).map(function (key) { return cb(objOrArray[key], key); });
+    }
+}
 var Runner = /** @class */ (function () {
     function Runner(config) {
-        if (config === void 0) { config = {}; }
+        if (config === void 0) { config = { home: process.cwd() }; }
         this.entries = {};
         this.tasks = {};
         this.taskTree = {};
@@ -17,14 +25,21 @@ var Runner = /** @class */ (function () {
     }
     Runner.prototype.startTask = function (task) {
         if (this.tasks[task.name]) {
-            console.warn("task '" + task.name + "' already exists, named access (runner.tasks[name]) will be overwritten");
+            console.warn("taskname '" + task.name + "' (" + task.fullName + ") already exists, named access (runner.tasks[" + task.name + "]) will be ambigus");
         }
         this.taskTree[task.fullName] = task;
         this.tasks[task.name] = task;
-        this.log('starting task:', task.name);
+        this.log('starting task:', task.fullName);
+    };
+    Runner.prototype.loadConfig = function (p) {
+        // return require(p);
+        if (p[0] === '~') {
+            p = p.replace('~', this.config.home || process.cwd());
+        }
+        return require(p);
     };
     Runner.prototype.endTask = function (task) {
-        this.log('ending task:', task.name);
+        this.log('ending task:', task.fullName);
     };
     Object.defineProperty(Runner.prototype, "config", {
         get: function () {
@@ -44,25 +59,25 @@ var Runner = /** @class */ (function () {
             for (var _i = 0; _i < arguments.length; _i++) {
                 args[_i] = arguments[_i];
             }
-            if (_this.config.verbose === 3) {
-                console.log.apply(console, args);
-            }
+            // if (this.config.verbose === 3) {
+            console.log.apply(console, args);
+            // }
         };
         if (args.length) {
             logger.apply(void 0, args);
         }
         logger.log = logger;
-        if (this.config.verbose === 2) {
-            logger.warn = function () {
-                var args = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    args[_i] = arguments[_i];
-                }
-                if (_this.config.verbose === 3) {
-                    console.log.apply(console, args);
-                }
-            };
-        }
+        // if (this.config.verbose === 2) {
+        logger.warn = function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            if (_this.config.verbose === 3) {
+                console.log.apply(console, args);
+            }
+        };
+        // }
         return logger;
     };
     return Runner;
@@ -121,7 +136,7 @@ function filterInput(input, task, runner) {
 }
 function resolveTasks(parent, runner) {
     if (parent.tasks) {
-        return util_1.resolver(Object.keys(parent.tasks).map(function (name) { return function () { return evaluateTask(parent.tasks ? parent.tasks[name] : {}, runner, parent, name); }; }), parent.parallel);
+        return util_1.resolver(map(parent.tasks, function (task, name) { return function () { return evaluateTask(task, runner, parent, {}, name); }; }), parent.parallel);
     }
     else {
         return Promise.resolve([]);
@@ -181,24 +196,29 @@ function evaluateEntries(entries, task, runner) {
         return entries;
     });
 }
-function evaluateTask(taskl, runner, parent, name) {
+function evaluateTask(taskl, runner, parent, config, name) {
+    if (config === void 0) { config = {}; }
     if (name === void 0) { name = '_root'; }
-    if (taskl instanceof Array) {
-        runner.log('starting task:' + name);
-        var task = new Task_1.default(runner, {}, name, parent);
-        if (parent) {
-            parent.tasks[name] = task;
-        }
-        return evaluateEntries(taskl.map(function (data) { return new Entry_1.default(data); }), task, runner);
+    if (typeof taskl === 'string') {
+        taskl = [taskl];
     }
-    else if (taskl instanceof Function) {
-        var res = taskl(runner, parent);
-        return Promise.resolve(res).then(function (res) { return res && evaluateTask(res, runner, parent, name); });
+    if (taskl instanceof Array) {
+        var src = taskl[0], conf = taskl[1];
+        var task = runner.loadConfig(src);
+        if (typeof name !== 'string') {
+            name = path.basename(src);
+        }
+        return evaluateTask(task, runner, parent, conf, name);
+    }
+    else if (typeof taskl === 'function') {
+        var evaluatedConfig = Object.assign({}, parent && parent.config || {}, config);
+        var res = taskl(evaluatedConfig, runner, parent);
+        return Promise.resolve(res).then(function (res) { return res && evaluateTask(res, runner, parent, {}, name); });
     }
     else if (taskl) {
         var task_1 = taskl instanceof Task_1.default ? taskl : new Task_1.default(runner, taskl, name, parent);
         if (parent) {
-            parent.tasks[name] = task_1;
+            parent.subTasks[task_1.name] = task_1;
         }
         runner.startTask(task_1);
         return resolveTasks(task_1, runner).then(function () {
@@ -211,11 +231,13 @@ function evaluateTask(taskl, runner, parent, name) {
             return entries;
         });
     }
-    return Promise.resolve([]);
+    else {
+        return Promise.resolve([]);
+    }
 }
 function run(task, config, runner) {
     if (config === void 0) { config = {}; }
     if (runner === void 0) { runner = new Runner(config); }
-    return evaluateTask(task, runner, undefined).then(function () { return runner; });
+    return evaluateTask(task, runner).then(function () { return runner; });
 }
 exports.run = run;

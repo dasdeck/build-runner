@@ -1,47 +1,87 @@
 import * as Runner from '../src';
 import * as path from 'path';
-import { EntrySet } from '../src/interface';
+import { EntrySet, TaskFactory, TaskInterface } from '../src/interface';
 
 const base = path.join(__dirname, 'content');
 
 describe('basic', () => {
 
+    let tmp: any;
+    let mockTask: TaskFactory;
+    let mockRequire: Function;
 
-    /**
-     * directly return an array of file entries from task entry
-     */
-    it('pure-entry-task', done => {
+    beforeAll(() => {
+        tmp = Runner.Runner.prototype.loadConfig;
+    });
+    beforeEach(() => {
+
+        mockTask = jest.fn(() => ({}));
+        mockRequire = jest.fn((path:string):TaskInterface|TaskFactory => {
+            return mockTask
+        });
+
+        Runner.Runner.prototype.loadConfig = mockRequire as any;
+    });
+
+    afterAll(() => {
+        Runner.Runner.prototype.loadConfig = tmp;
+    });
+
+    it('reference-task-config', done => {
+
+
+        Runner.run({
+            config: {
+                testRoot: 2
+            },
+            tasks: {
+                task: ['test', {test: 1}]
+            }
+        }).then((runner:Runner.Runner) => {
+            expect(mockTask).toBeCalledWith({test: 1, testRoot: 2}, runner, runner.tasks._root);
+            expect(mockRequire).toHaveBeenCalledWith('test');
+            done();
+        });
+
+
+    });
+
+    it('use-task-name-from-reference', done => {
+
+        Runner.run({
+            config: {
+                testRoot: 2
+            },
+            tasks: [
+                './test'
+            ]
+        }).then((runner:Runner.Runner) => {
+            expect(mockTask).toBeCalledWith({testRoot: 2}, runner, runner.tasks._root);
+            expect(mockRequire).toHaveBeenCalledWith('./test');
+            expect(runner.tasks.test).not.toBeUndefined();
+            done();
+        });
+
+    });
+
+    it('reference-task-short', done => {
 
         Runner.run({
             tasks: {
-                task1: [{src: 'test1.txt'}],
-                task2: () => [{src: 'test2.txt'}],
-                task3: () => Promise.resolve([{src: 'test3.txt'}])
-            },
-            output: (entries: EntrySet, runner: Runner.Runner) => {
-
-                expect(runner).toBeDefined();
-                expect(runner.entries.task1.length).toBe(1);
-                expect(runner.entries.task1[0]).toBeInstanceOf(Runner.Entry);
-                expect(runner.entries.task1[0].dest).toBe('test1.txt');
-                expect(runner.entries.task2.length).toBe(1);
-                expect(runner.entries.task2[0].dest).toBe('test2.txt');
-
-                expect(runner.entries.task3.length).toBe(1);
-                expect(runner.entries.task3[0].dest).toBe('test3.txt');
-
+                task: 'test'
             }
-
         }).then(() => {
 
+            expect(mockRequire).toHaveBeenCalledWith('test');
             done();
-
         });
+
 
     });
 
     /**
      * return a dynamic task json from a function
+     * @deprecated
      */
     it('dynamic-task', done => {
 
@@ -77,7 +117,7 @@ describe('basic', () => {
         const base = path.join(__dirname, 'content');
         Runner.run({
             tasks: {
-                task1: (runner: Runner.Runner) => new Promise(res => res({
+                task1: () => new Promise(res => res({
                     input: {
                         base,
                         src: '**/*'
@@ -91,7 +131,7 @@ describe('basic', () => {
                 expect(runner.entries.task1[2].dest).toBe('test2.txt')
             }
 
-        }).then(runner => {
+        }).then(() => {
 
             done();
 

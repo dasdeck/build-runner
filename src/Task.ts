@@ -6,7 +6,7 @@ export default class Task implements TaskInterface {
 
     _config?:any
     dest?:string
-    base?:string //shared base
+    _base?:string //shared base
     filter?:Filter
     input?:OneOrMore<InputLike>
     output?:Output
@@ -16,23 +16,34 @@ export default class Task implements TaskInterface {
     parallel?:boolean
     runner: Runner
     entries: EntrySet = []
+    subTasks: GenericObject<Task> = {}
 
-    constructor(runner: Runner, data: TaskInterface, name: string = '_root', parent?: Task) {
+    constructor(runner: Runner, data: TaskInterface, name: string|number = '_root', parent?: Task) {
 
         this.runner = runner;
-        this.name = name;
+        this.name = typeof name === "number" ? `task${name + 1}` : name;
         this.parent = parent;
 
         Object.assign(this, data);
 
     }
 
-    set config(conf) {
-        this._config = conf;
-    }
+
 
     get fullName(): string {
         return (this.parent && (this.parent.fullName + '.') || '')  + this.name;
+    }
+
+    set base(base: string) {
+        this._base = base;
+    }
+
+    get base(): string {
+        return this._base || this.config.base;
+    }
+
+    set config(conf) {
+        this._config = conf;
     }
 
     get config(): GenericObject {
@@ -49,10 +60,6 @@ export default class Task implements TaskInterface {
     }
 
     get subEntries(): EntrySet {
-        if (this.tasks) {
-            return Object.keys(this.tasks).reduce((res: EntrySet, name) => res.concat((<Task>(<TaskList>this.tasks)[name]).entries), [])
-        } else {
-            return [];
-        }
+        return Object.keys(this.subTasks).reduce((res: EntrySet, name) => res.concat(this.subTasks[name].entries), [])
     }
 }
