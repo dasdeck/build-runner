@@ -1,6 +1,7 @@
 
-import * as Runner from '../src/Runner';
+import * as Runner from '../src';
 import * as path from 'path';
+import { EntrySet } from '../src/interface';
 /**
  * miscelenious test to for cross checking or buck fixing
  */
@@ -20,7 +21,7 @@ describe('misc', () => {
                 },
 
                 test2: {
-                    output(entries: any, runner: Runner.Runner) {
+                    output(entries: EntrySet, runner: Runner.Runner) {
                         expect(runner.entries.test.length).toBe(1);
                     }
                 }

@@ -1,4 +1,5 @@
 import {run, Runner, Task} from '../src';
+import { GenericObject, EntrySet } from '../src/interface';
 
 describe('config', () => {
 
@@ -9,12 +10,12 @@ describe('config', () => {
 
         const config = {
             tasks: {
-                test: (runner: Runner) => [{content: runner._config}]
+                test: (runner: Runner) => [{content: 'config', data: runner._config}]
             }
         }
 
         run(config).then(runner => {
-            expect((<any>runner.entries.test[0]).content).toBe(runner._config);
+            expect((<any>runner.entries.test[0]).data).toBe(runner._config);
             done();
         })
 
@@ -58,28 +59,34 @@ describe('config', () => {
                     },
 
                     tasks: {
-                        task2(runner: Runner, {config}: {config:any}) {
-                            expect(config.test).toBe(2);
+                        task2(runner: Runner, parent) {
+                            if (parent) {
+                                expect(parent.config.test).toBe(2);
+                            }
 
                             return {
                                 name: 'p1',
                                 tasks: {
-                                    task4(runner: Runner, parent: Task) {
-                                        expect(parent.name).toBe('p1');
-                                        expect(parent.config.test).toBe(2);
+                                    task4(runner: Runner, parent) {
+                                        if (parent) {
+                                            expect(parent.name).toBe('p1');
+                                            expect(parent.config.test).toBe(2);
+                                        }
                                     }
                                 }
                             }
                         }
                     },
-                    output(entries: [], runner: Runner, {config}: {config: any}) {
+                    output(entries: EntrySet, runner: Runner, {config}: {config: GenericObject}) {
                         expect(config.test).toBe(2);
                         return [{src: 'test1'}]
                     }
                 }),
 
-                task3(runner: Runner, {config}: {config: any}) {
-                    expect(config.test).toBe(1);
+                task3(runner: Runner, parent) {
+                    if (parent) {
+                        expect(parent.config.test).toBe(1);
+                    }
                 }
             },
 

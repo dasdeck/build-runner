@@ -4,11 +4,12 @@ import * as request from 'request-promise-native';
 import {resolver} from './util';
 import Entry from './Entry';
 import Task from './Task';
-import {GenericObject, TaskFactory, TaskLike, EntrySet, PromisedEntries, ResolvedEntrySet, PromisedEntryResult, Input, InputLike, EntryResult} from './interface';
+import {GenericObject, TaskFactory, TaskLike, EntrySet, PromisedEntries, PromisedEntryResult, Input, InputLike, EntryResult} from './interface';
 
 
 export default class Runner {
-    entries: { [s: string]: ResolvedEntrySet; } = {}
+
+    entries: { [s: string]: EntrySet; } = {}
     tasks: { [s: string]: Task; } = {}
     taskTree: { [s: string]: Task; } = {}
     _config: GenericObject = {}
@@ -20,16 +21,18 @@ export default class Runner {
     startTask(task: Task) {
 
         if (this.tasks[task.name]) {
-            console.warn(`task '${task.name}' already exists`);
+            console.warn(`task '${task.name}' already exists, named access (runner.tasks[name]) will be overwritten`);
         }
 
         this.taskTree[task.fullName] = task;
         this.tasks[task.name] = task;
+
         this.log('starting task:', task.name);
     }
 
     endTask(task: Task) {
 
+        this.log('ending task:', task.name);
     }
 
     get config() {
@@ -37,10 +40,30 @@ export default class Runner {
     }
 
     log(...args: any) {
-        if (this.config.verbose) {
-            console.log(...args);
+
+        const logger = (...args: any) => {
+            if (this.config.verbose === 3) {
+                console.log(...args);
+            }
         }
+
+        if (args.length) {
+            logger(...args)
+        }
+
+        logger.log = logger;
+
+        if (this.config.verbose === 2) {
+            logger.warn = (...args: any) => {
+                if (this.config.verbose === 3) {
+                    console.log(...args);
+                }
+            }
+        }
+
+        return logger;
     }
+
 }
 
 
@@ -111,12 +134,14 @@ function resolveTasks(parent: Task, runner: Runner): PromisedEntries {
     }
 }
 
-function logEntries(entries: ResolvedEntrySet, runner: Runner, name?: string): void {
+function logEntries(entries: EntrySet, runner: Runner, name?: string): void {
+
     name = name || `task${Object.keys(runner.entries).length}`;
     runner.entries[name] = entries;
+
 }
 
-function outputEntries(entries: ResolvedEntrySet, task: Task, runner: Runner): PromisedEntries {
+function outputEntries(entries: EntrySet, task: Task, runner: Runner): PromisedEntries {
 
     return Promise.resolve(entries).then(entries => {
 
@@ -140,6 +165,7 @@ function outputEntries(entries: ResolvedEntrySet, task: Task, runner: Runner): P
         throw `Error in task ${task.fullName}.output : ${err} \n ${err.stack}`;
 
     })
+
 }
 
 function filterEntries(entries: PromisedEntries, input:InputLike, task: Task, runner:Runner):PromisedEntries {
@@ -169,6 +195,7 @@ function filterEntries(entries: PromisedEntries, input:InputLike, task: Task, ru
 }
 
 function evaluateEntries(entries: EntrySet, task:Task, runner:Runner):PromisedEntries {
+
     return Promise.all(entries).then(entries => outputEntries(entries, task, runner)).then((entries: EntrySet) => {
 
         if(entries.find(entry => entry instanceof Promise)) {
@@ -179,6 +206,7 @@ function evaluateEntries(entries: EntrySet, task:Task, runner:Runner):PromisedEn
         logEntries(entries, runner, task.name);
         return entries;
     });
+
 }
 
 function evaluateTask(taskl: TaskLike | TaskFactory, runner: Runner, parent?: Task, name:string = '_root'):PromisedEntries {
@@ -213,6 +241,9 @@ function evaluateTask(taskl: TaskLike | TaskFactory, runner: Runner, parent?: Ta
             .then(inputsSets => inputsSets.reduce((res, set) => res.concat(set), []))
             .then(entries => evaluateEntries(entries, task, runner));
 
+        }).then(entries => {
+            runner.endTask(task);
+            return entries;
         });
 
     }
@@ -227,6 +258,8 @@ function run(task:TaskLike | TaskFactory, config:GenericObject = {}, runner: Run
 }
 
 export {
+
     run,
     Runner
+
 }

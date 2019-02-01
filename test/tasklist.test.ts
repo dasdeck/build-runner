@@ -1,5 +1,6 @@
-import * as Runner from '../src/Runner';
+import * as Runner from '../src';
 import * as path from 'path';
+import { EntrySet } from '../src/interface';
 
 describe('tasklist', () => {
 
@@ -22,7 +23,7 @@ describe('tasklist', () => {
                     }
                 }
             },
-            output: (entries: Runner.Entry[], runner: Runner.Runner) => {
+            output: (entries: EntrySet, runner: Runner.Runner) => {
 
                 expect(runner).toBeDefined();
                 expect(runner.entries.task1[0].dest).toBe('test1.txt')

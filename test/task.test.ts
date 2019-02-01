@@ -1,9 +1,8 @@
 import * as Runner from '../src';
 import * as path from 'path';
-import { ResolvedEntrySet } from '../src/interface';
+import { EntrySet } from '../src/interface';
 
 const base = path.join(__dirname, 'content');
-
 
 describe('basic', () => {
 
@@ -19,7 +18,7 @@ describe('basic', () => {
                 task2: () => [{src: 'test2.txt'}],
                 task3: () => Promise.resolve([{src: 'test3.txt'}])
             },
-            output: (entries: Runner.Entry[], runner: Runner.Runner) => {
+            output: (entries: EntrySet, runner: Runner.Runner) => {
 
                 expect(runner).toBeDefined();
                 expect(runner.entries.task1.length).toBe(1);
@@ -33,7 +32,7 @@ describe('basic', () => {
 
             }
 
-        }).then(runner => {
+        }).then(() => {
 
             done();
 
@@ -48,7 +47,7 @@ describe('basic', () => {
 
         Runner.run({
             tasks: {
-                task1: (runner: Runner.Runner) => ({
+                task1: () => ({
                     input: {
                         base,
                         src: '**/*',
@@ -62,7 +61,7 @@ describe('basic', () => {
                 expect(runner.entries.task1[2].dest).toBe('test2.txt')
             }
 
-        }).then(runner => {
+        }).then(() => {
 
             done();
 
@@ -122,7 +121,7 @@ describe('basic', () => {
             tasks: {
                 test: () => Promise.resolve({}),
             },
-            output(e: ResolvedEntrySet, r: Runner.Runner, t: Runner.Task) {
+            output(e: EntrySet, r: Runner.Runner, t: Runner.Task) {
                 expect(r.tasks.test.fullName).toBe('parent.test');
             }
         }).then(() => {

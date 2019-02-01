@@ -17,13 +17,14 @@ var Runner = /** @class */ (function () {
     }
     Runner.prototype.startTask = function (task) {
         if (this.tasks[task.name]) {
-            console.warn("task '" + task.name + "' already exists");
+            console.warn("task '" + task.name + "' already exists, named access (runner.tasks[name]) will be overwritten");
         }
         this.taskTree[task.fullName] = task;
         this.tasks[task.name] = task;
         this.log('starting task:', task.name);
     };
     Runner.prototype.endTask = function (task) {
+        this.log('ending task:', task.name);
     };
     Object.defineProperty(Runner.prototype, "config", {
         get: function () {
@@ -33,13 +34,36 @@ var Runner = /** @class */ (function () {
         configurable: true
     });
     Runner.prototype.log = function () {
+        var _this = this;
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];
         }
-        if (this.config.verbose) {
-            console.log.apply(console, args);
+        var logger = function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            if (_this.config.verbose === 3) {
+                console.log.apply(console, args);
+            }
+        };
+        if (args.length) {
+            logger.apply(void 0, args);
         }
+        logger.log = logger;
+        if (this.config.verbose === 2) {
+            logger.warn = function () {
+                var args = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    args[_i] = arguments[_i];
+                }
+                if (_this.config.verbose === 3) {
+                    console.log.apply(console, args);
+                }
+            };
+        }
+        return logger;
     };
     return Runner;
 }());
@@ -182,6 +206,9 @@ function evaluateTask(taskl, runner, parent, name) {
             return Promise.all(inputs.map(function (input) { return filterInput(input, task_1, runner); }))
                 .then(function (inputsSets) { return inputsSets.reduce(function (res, set) { return res.concat(set); }, []); })
                 .then(function (entries) { return evaluateEntries(entries, task_1, runner); });
+        }).then(function (entries) {
+            runner.endTask(task_1);
+            return entries;
         });
     }
     return Promise.resolve([]);

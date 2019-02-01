@@ -1,7 +1,7 @@
 
 
-import {TaskInterface, Filter, OneOrMore, InputLike, Output, TaskList, EntrySet, ResolvedEntrySet} from './interface';
-import { Runner } from '.';
+import {TaskInterface, Filter, OneOrMore, InputLike, Output, TaskList, EntrySet, GenericObject} from './interface';
+import {Runner} from '.';
 export default class Task implements TaskInterface {
 
     _config?:any
@@ -15,9 +15,9 @@ export default class Task implements TaskInterface {
     parent?:Task
     parallel?:boolean
     runner: Runner
-    entries: ResolvedEntrySet = []
+    entries: EntrySet = []
 
-    constructor(runner: Runner, data: any, name: string = '_root', parent?: Task) {
+    constructor(runner: Runner, data: TaskInterface, name: string = '_root', parent?: Task) {
 
         this.runner = runner;
         this.name = name;
@@ -35,7 +35,7 @@ export default class Task implements TaskInterface {
         return (this.parent && (this.parent.fullName + '.') || '')  + this.name;
     }
 
-    get config(): any {
+    get config(): GenericObject {
 
         const parentConfig = this.parent && this.parent.config || this.runner._config || {};
 
@@ -48,9 +48,9 @@ export default class Task implements TaskInterface {
 
     }
 
-    get subEntries(): ResolvedEntrySet {
+    get subEntries(): EntrySet {
         if (this.tasks) {
-            return Object.keys(this.tasks).reduce((res: ResolvedEntrySet, name) => res.concat((<Task>(<TaskList>this.tasks)[name]).entries), [])
+            return Object.keys(this.tasks).reduce((res: EntrySet, name) => res.concat((<Task>(<TaskList>this.tasks)[name]).entries), [])
         } else {
             return [];
         }

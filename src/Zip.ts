@@ -1,3 +1,4 @@
+import {EntrySet} from './interface';
 import Entry from './Entry';
 import * as AdmZip from 'adm-zip';
 import * as path from 'path';
@@ -5,7 +6,7 @@ import * as fs from 'fs';
 
 export default class Zip {
 
-    constructor(entries?: Entry[]) {
+    constructor(entries?: EntrySet) {
 
         if (entries) {
             this.setEntries(entries);
@@ -25,7 +26,7 @@ export default class Zip {
         this.entries[entry.dest] = entry;
     }
 
-    setEntries(entries: Entry[]) {
+    setEntries(entries: EntrySet) {
         entries.forEach(entry => this.setEntry(entry));
     }
 
