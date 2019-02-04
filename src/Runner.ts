@@ -140,7 +140,7 @@ function outputEntries(entries: EntrySet, task: Task, runner: Runner): PromisedE
             if (res === true || typeof res === 'undefined') {
                 return entries;
             } else if(res) {
-                return Promise.resolve(res).then(res => <Entry[]>res.map(Entry.forceEntry).filter(v => v));
+                return Promise.resolve(res).then(res => (res instanceof Array && <Entry[]>res.map(Entry.forceEntry) || []).filter(v => v));
             } else {
                 return [];
             }

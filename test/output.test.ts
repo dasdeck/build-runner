@@ -42,6 +42,14 @@ describe('output', () => {
 
     });
 
+    it('void-promise', done => {
+
+        Runner.run({
+            output: () => new Promise(res => res())
+        }).then(() => done())
+
+    })
+
     it('task-has-entries-and-sub-entries', done => {
 
         const base = path.join(__dirname, 'content');

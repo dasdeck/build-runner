@@ -118,7 +118,7 @@ function outputEntries(entries, task, runner) {
                 return entries;
             }
             else if (res) {
-                return Promise.resolve(res).then(function (res) { return res.map(Entry_1.default.forceEntry).filter(function (v) { return v; }); });
+                return Promise.resolve(res).then(function (res) { return (res instanceof Array && res.map(Entry_1.default.forceEntry) || []).filter(function (v) { return v; }); });
             }
             else {
                 return [];
