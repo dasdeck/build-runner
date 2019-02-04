@@ -4,9 +4,9 @@ import * as request from 'request-promise-native';
 import {resolver, map} from './util';
 import Entry from './Entry';
 import Task from './Task';
-import {GenericObject, TaskFactory, TaskLike, EntrySet, PromisedEntries, PromisedEntryResult, Input, InputLike, EntryResult, TaskInterface, Logger} from './interface';
+import {GenericObject, TaskFactory, TaskLike, EntrySet, PromisedEntries, PromisedEntryResult, Input, InputLike, EntryResult, TaskInterface} from './interface';
 import Cache from './Cache';
-
+import Logger from './Logger';
 
 export default class Runner {
 

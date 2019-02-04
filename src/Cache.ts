@@ -2,7 +2,7 @@ import { GenericObject } from "./interface";
 
 export default class Cache {
 
-    data: GenericObject = {}
+    private data: GenericObject = {}
 
     persistResult(key: string, getter: Function, ...args: any): Promise<any> {
 

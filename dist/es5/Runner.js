@@ -6,8 +6,8 @@ var request = require("request-promise-native");
 var util_1 = require("./util");
 var Entry_1 = require("./Entry");
 var Task_1 = require("./Task");
-var interface_1 = require("./interface");
 var Cache_1 = require("./Cache");
+var Logger_1 = require("./Logger");
 var Runner = /** @class */ (function () {
     function Runner(config) {
         if (config === void 0) { config = { home: process.cwd() }; }
@@ -17,7 +17,7 @@ var Runner = /** @class */ (function () {
         this._config = {};
         this.cache = new Cache_1.default;
         this._config = config;
-        this.logger = new interface_1.Logger(config.log);
+        this.logger = new Logger_1.default(config.log);
     }
     Runner.prototype.startTask = function (task) {
         if (this.tasks[task.name]) {
