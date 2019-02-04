@@ -5,6 +5,7 @@ import {resolver, map} from './util';
 import Entry from './Entry';
 import Task from './Task';
 import {GenericObject, TaskFactory, TaskLike, EntrySet, PromisedEntries, PromisedEntryResult, Input, InputLike, EntryResult, TaskInterface, Logger} from './interface';
+import Cache from './Cache';
 
 
 export default class Runner {
@@ -14,6 +15,7 @@ export default class Runner {
     taskTree: { [s: string]: Task; } = {}
     _config: GenericObject = {}
     logger: Logger
+    cache: Cache = new Cache
 
     constructor(config: GenericObject = {home: process.cwd()}) {
         this._config = config;
@@ -57,9 +59,9 @@ const pathResolvers = [
 
     (src: string, input: Input, task: Task): PromisedEntryResult[]|void => {
         if (src.indexOf('http') === 0) {
-            return [request(src, {encoding: null}).then((content:string|Buffer) => {
+            return [task.runner.cache.persistResult(src, () => request(src, {encoding: null}).then((content:string|Buffer) => {
                 return {content, src};
-            })]
+            }))]
         }
     },
 

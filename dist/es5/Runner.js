@@ -7,6 +7,7 @@ var util_1 = require("./util");
 var Entry_1 = require("./Entry");
 var Task_1 = require("./Task");
 var interface_1 = require("./interface");
+var Cache_1 = require("./Cache");
 var Runner = /** @class */ (function () {
     function Runner(config) {
         if (config === void 0) { config = { home: process.cwd() }; }
@@ -14,6 +15,7 @@ var Runner = /** @class */ (function () {
         this.tasks = {};
         this.taskTree = {};
         this._config = {};
+        this.cache = new Cache_1.default;
         this._config = config;
         this.logger = new interface_1.Logger(config.log);
     }
@@ -49,9 +51,9 @@ exports.default = Runner;
 var pathResolvers = [
     function (src, input, task) {
         if (src.indexOf('http') === 0) {
-            return [request(src, { encoding: null }).then(function (content) {
+            return [task.runner.cache.persistResult(src, function () { return request(src, { encoding: null }).then(function (content) {
                     return { content: content, src: src };
-                })];
+                }); })];
         }
     },
     function (src, input, task) {
