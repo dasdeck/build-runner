@@ -72,17 +72,20 @@ const pathResolvers = [
     }
 ]
 
-function resolvePath(src: string, input: Input, task: Task = new Task(new Runner(), {})): PromisedEntries {
+function resolvePath(src: string, input: Input, task?: Task): PromisedEntries {
 
-    for (const i in pathResolvers) {
-        const resolver = pathResolvers[i];
-        const res = resolver(src, input, task);
+    if (task) {
 
-        if (res) {
-            const dest = input.dest || task.dest;
-            return Promise.resolve(res).then(res => Promise.all(res)).then(res => res.map((data: any) => new Entry(data).inDest(dest))).catch(err => {
-                throw `Error in task ${task.fullName}.input : ${err} \n ${err.stack}`;
-            });
+        for (const i in pathResolvers) {
+            const resolver = pathResolvers[i];
+            const res = resolver(src, input, task);
+
+            if (res) {
+                const dest = input.dest || task.dest;
+                return Promise.resolve(res).then(res => Promise.all(res)).then(res => res.map((data: any) => new Entry(data).inDest(dest))).catch(err => {
+                    throw `Error in task ${task.fullName}.input : ${err} \n ${err.stack}`;
+                });
+            }
         }
     }
 
@@ -114,9 +117,9 @@ function filterInput(input: InputLike, task: Task, runner: Runner = new Runner(t
     return filterEntries(entries, input, task, runner);
 }
 
-function resolveTasks(parent: Task, runner: Runner): PromisedEntries {
+function resolveTasks(parent: Task, runner: Runner, config: GenericObject): PromisedEntries {
     if (parent.tasks) {
-        return resolver(<any>map(parent.tasks, (task: TaskLike, name:string|number) => () => evaluateTask(task, runner, parent, {}, name)), parent.parallel)
+        return resolver(<any>map(parent.tasks, (task: TaskLike, name:string|number) => () => evaluateTask(task, runner, parent, config, name)), parent.parallel)
     } else {
         return Promise.resolve([]);
     }
@@ -197,7 +200,7 @@ function evaluateEntries(entries: EntrySet, task:Task, runner:Runner):PromisedEn
 
 }
 
-function evaluateTask(taskl: TaskLike | TaskFactory, runner: Runner, parent?: Task, config: GenericObject= {}, name:string|number = '_root'):PromisedEntries {
+function evaluateTask(taskl: TaskLike | TaskFactory, runner: Runner, parent?: Task, config: GenericObject = {}, name:string|number = '_root'):PromisedEntries {
 
     if (typeof taskl === 'string') {
         taskl = [taskl];
@@ -212,13 +215,14 @@ function evaluateTask(taskl: TaskLike | TaskFactory, runner: Runner, parent?: Ta
             name = path.basename(src);
         }
 
-        return evaluateTask(task, runner, parent, conf, name);
+        return evaluateTask(task, runner, parent, Object.assign({}, config, conf), name);
 
     } else if (typeof taskl === 'function') {
 
         const evaluatedConfig = Object.assign({}, parent && parent.config || {}, config);
         const res: any = taskl(evaluatedConfig, runner, parent);
-        return Promise.resolve(res).then(res => res && evaluateTask(res, runner, parent, {}, name));
+
+        return Promise.resolve(res).then(res => res && evaluateTask(res, runner, parent, config, name));
 
     } else if (taskl) {
 
@@ -228,7 +232,7 @@ function evaluateTask(taskl: TaskLike | TaskFactory, runner: Runner, parent?: Ta
         }
         runner.startTask(task);
 
-        return resolveTasks(task, runner).then(() => {
+        return resolveTasks(task, runner, config).then(() => {
 
             const inputs = task.input instanceof Array ? task.input : task.input && [task.input] || [];
 

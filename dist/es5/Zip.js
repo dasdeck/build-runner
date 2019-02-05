@@ -6,7 +6,10 @@ var fs = require("fs");
 var Zip = /** @class */ (function () {
     function Zip(entries) {
         this.entries = {};
-        if (entries) {
+        if (entries instanceof Buffer) {
+            this.base = entries;
+        }
+        else if (entries instanceof Array) {
             this.setEntries(entries);
         }
     }
@@ -24,9 +27,9 @@ var Zip = /** @class */ (function () {
         var _this = this;
         entries.forEach(function (entry) { return _this.setEntry(entry); });
     };
-    Zip.prototype.toAdm = function () {
+    Zip.prototype.toAdm = function (zip) {
         var _this = this;
-        var zip = new AdmZip();
+        if (zip === void 0) { zip = new AdmZip(this.base); }
         Object.keys(this.entries).forEach(function (target) {
             var entry = _this.entries[target];
             if (entry.content) {

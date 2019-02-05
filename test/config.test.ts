@@ -45,6 +45,43 @@ describe('config', () => {
         }).then(() => done());
     });
 
+    it('overridden-config', done => {
+
+        Runner.prototype.loadConfig = () => test;
+
+        const test = (config:GenericObject) => {
+
+            expect(config.val).toBe(3);
+
+            return {
+
+                tasks: [
+                    (config:GenericObject) => {
+                        expect(config.val).toBe(3)
+                    }
+                ],
+                config: {
+                    val: 2
+                },
+                output: (e: EntrySet, r: Runner, t: Task) => {
+                    expect(t.config.val).toBe(2);
+                    done()
+                }
+
+            };
+        };
+
+        run({
+            config: {
+                val: 5
+            },
+            tasks: [
+                ['test', {val: 3}]
+            ]
+        })
+
+    });
+
     it('override-config-locally', done => {
 
         run({

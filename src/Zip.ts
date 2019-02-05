@@ -6,9 +6,13 @@ import * as fs from 'fs';
 
 export default class Zip {
 
-    constructor(entries?: EntrySet) {
+    base?: Buffer
 
-        if (entries) {
+    constructor(entries?: EntrySet | Buffer) {
+
+        if (entries instanceof Buffer) {
+            this.base = entries;
+        } else if (entries instanceof Array) {
             this.setEntries(entries);
         }
     }
@@ -30,9 +34,7 @@ export default class Zip {
         entries.forEach(entry => this.setEntry(entry));
     }
 
-    toAdm(): AdmZip {
-
-        const zip = new AdmZip();
+    toAdm(zip = new AdmZip(this.base as Buffer)): AdmZip {
 
         Object.keys(this.entries).forEach(target => {
 

@@ -1,8 +1,18 @@
 import { GenericObject } from "./interface";
+import * as path from 'path';
+import * as fs from "fs";
 
+interface CacheConfig {
+    dir: string
+}
 export default class Cache {
 
     private data: GenericObject = {}
+    private config: CacheConfig;
+
+    constructor(config = {dir: path.join(process.cwd(), '.cache')}) {
+        this.config = config;
+    }
 
     persistResult(key: string, getter: Function, ...args: any): Promise<any> {
 
@@ -25,5 +35,15 @@ export default class Cache {
     set(key: string, value: any): any {
         this.data[key] = value;
         return value;
+    }
+
+    store() {
+
+    }
+
+    restore() {
+        if (fs.existsSync(this.config.dir)) {
+
+        }
     }
 }

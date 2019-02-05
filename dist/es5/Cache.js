@@ -1,8 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+var path = require("path");
+var fs = require("fs");
 var Cache = /** @class */ (function () {
-    function Cache() {
+    function Cache(config) {
+        if (config === void 0) { config = { dir: path.join(process.cwd(), '.cache') }; }
         this.data = {};
+        this.config = config;
     }
     Cache.prototype.persistResult = function (key, getter) {
         var _this = this;
@@ -25,6 +29,12 @@ var Cache = /** @class */ (function () {
     Cache.prototype.set = function (key, value) {
         this.data[key] = value;
         return value;
+    };
+    Cache.prototype.store = function () {
+    };
+    Cache.prototype.restore = function () {
+        if (fs.existsSync(this.config.dir)) {
+        }
     };
     return Cache;
 }());
