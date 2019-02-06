@@ -128,6 +128,11 @@ function outputEntries(entries, task, runner) {
         else {
             return entries;
         }
+    }).then(function (entries) {
+        if (task.cache) {
+            task.storeCache();
+        }
+        return entries;
     }).catch(function (err) {
         throw "Error in task " + task.fullName + ".output : " + err + " \n " + err.stack;
     });
@@ -157,6 +162,7 @@ function evaluateEntries(entries, task, runner) {
             throw 'entry should be resolved before logging';
         }
         task.entries = entries;
+        task.storeCache();
         logEntries(entries, runner, task.name);
         return entries;
     });
@@ -185,6 +191,12 @@ function evaluateTask(taskl, runner, parent, config, name) {
         if (parent) {
             parent.subTasks[task_1.name] = task_1;
         }
+        if (parent && !parent.parent && config._taskFilter && !config._taskFilter.some(function (name) { return task_1.name.includes(name); })) {
+            return Promise.resolve([]);
+        }
+        if (task_1.cache && task_1.restoreCache()) {
+            return Promise.resolve(task_1.entries);
+        }
         runner.startTask(task_1);
         return resolveTasks(task_1, runner, config).then(function () {
             var inputs = task_1.input instanceof Array ? task_1.input : task_1.input && [task_1.input] || [];
@@ -203,6 +215,6 @@ function evaluateTask(taskl, runner, parent, config, name) {
 function run(task, config, runner) {
     if (config === void 0) { config = {}; }
     if (runner === void 0) { runner = new Runner(config); }
-    return evaluateTask(task, runner).then(function () { return runner; });
+    return evaluateTask(task, runner, undefined, config).then(function () { return runner; });
 }
 exports.run = run;

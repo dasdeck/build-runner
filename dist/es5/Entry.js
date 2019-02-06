@@ -44,12 +44,13 @@ var Entry = /** @class */ (function () {
             return this;
         }
     };
-    Entry.prototype.loadContent = function (encoding) {
+    Entry.prototype.loadContent = function (encoding, override) {
         if (encoding === void 0) { encoding = 'utf8'; }
-        if (this.src && fs.existsSync(this.src)) {
+        if (override === void 0) { override = false; }
+        if ((!this.content || override) && this.src && fs.existsSync(this.src)) {
             this.content = fs.readFileSync(this.src, encoding);
-            return this.content;
         }
+        return this.content;
     };
     return Entry;
 }());

@@ -2,6 +2,7 @@
 
 import {TaskInterface, Filter, OneOrMore, InputLike, Output, TaskList, EntrySet, GenericObject, DynamicConfig} from './interface';
 import {Runner} from '.';
+import { isString } from 'util';
 export default class Task implements TaskInterface {
 
     _config?:GenericObject | DynamicConfig
@@ -17,6 +18,7 @@ export default class Task implements TaskInterface {
     runner: Runner
     entries: EntrySet = []
     subTasks: GenericObject<Task> = {}
+    cache?: boolean|string
 
     constructor(runner: Runner, data: TaskInterface, name: string|number = '_root', parent?: Task) {
 
@@ -44,6 +46,25 @@ export default class Task implements TaskInterface {
 
     set config(conf: GenericObject) {
         this._config = conf;
+    }
+
+    get cacheKey() {
+        return this.fullName + isString(this.cache) ? `.${this.cache}` : '';
+    }
+
+    storeCache() {
+        if (this.cache) {
+            this.runner.cache.set(this.cacheKey, this.entries);
+        }
+    }
+
+    restoreCache() {
+        const entries = this.runner.cache.get(this.cacheKey);
+        if (entries) {
+            this.entries = entries;
+            Object.keys(this.subTasks).forEach(name => this.subTasks[name].restoreCache());
+            return true;
+        }
     }
 
     get config(): GenericObject {

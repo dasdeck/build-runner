@@ -19,3 +19,5 @@ function map(objOrArray, cb) {
     }
 }
 exports.map = map;
+var isString = function (val) { return (typeof val === 'string'); };
+exports.isString = isString;

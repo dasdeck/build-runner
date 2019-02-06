@@ -45,10 +45,10 @@ export default class Entry implements EntryLike {
         }
     }
 
-    loadContent(encoding = 'utf8'): Content | void {
-        if (this.src && fs.existsSync(this.src)) {
+    loadContent(encoding = 'utf8', override: boolean = false): Content | void {
+        if ((!this.content || override) && this.src && fs.existsSync(this.src)) {
             this.content = fs.readFileSync(this.src, encoding);
-            return this.content
         }
+        return this.content
     }
 }

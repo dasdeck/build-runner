@@ -52,7 +52,8 @@ interface TaskInterface {
     tasks?:TaskList,
     name?:string,
     parent?:Task,
-    parallel?:boolean
+    parallel?:boolean,
+    cache?: boolean|string
 }
 
 interface LazyPromise<T=any> {():Promise<T>}

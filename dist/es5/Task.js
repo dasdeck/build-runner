@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+var util_1 = require("util");
 var Task = /** @class */ (function () {
     function Task(runner, data, name, parent) {
         if (name === void 0) { name = '_root'; }
@@ -46,6 +47,27 @@ var Task = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(Task.prototype, "cacheKey", {
+        get: function () {
+            return this.fullName + util_1.isString(this.cache) ? "." + this.cache : '';
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Task.prototype.storeCache = function () {
+        if (this.cache) {
+            this.runner.cache.set(this.cacheKey, this.entries);
+        }
+    };
+    Task.prototype.restoreCache = function () {
+        var _this = this;
+        var entries = this.runner.cache.get(this.cacheKey);
+        if (entries) {
+            this.entries = entries;
+            Object.keys(this.subTasks).forEach(function (name) { return _this.subTasks[name].restoreCache(); });
+            return true;
+        }
+    };
     Object.defineProperty(Task.prototype, "subEntries", {
         get: function () {
             var _this = this;

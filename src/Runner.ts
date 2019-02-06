@@ -7,6 +7,7 @@ import Task from './Task';
 import {GenericObject, TaskFactory, TaskLike, EntrySet, PromisedEntries, PromisedEntryResult, Input, InputLike, EntryResult, TaskInterface} from './interface';
 import Cache from './Cache';
 import Logger from './Logger';
+import { isString } from 'util';
 
 export default class Runner {
 
@@ -151,6 +152,11 @@ function outputEntries(entries: EntrySet, task: Task, runner: Runner): PromisedE
             return entries;
         }
 
+    }).then(entries => {
+        if (task.cache) {
+            task.storeCache();
+        }
+        return entries;
     }).catch(err => {
 
         throw `Error in task ${task.fullName}.output : ${err} \n ${err.stack}`;
@@ -194,6 +200,7 @@ function evaluateEntries(entries: EntrySet, task:Task, runner:Runner):PromisedEn
         }
 
         task.entries = entries;
+        task.storeCache();
         logEntries(entries, runner, task.name);
         return entries;
     });
@@ -230,6 +237,15 @@ function evaluateTask(taskl: TaskLike | TaskFactory, runner: Runner, parent?: Ta
         if (parent) {
             parent.subTasks[task.name] = task;
         }
+
+        if (parent && !parent.parent && config._taskFilter && !config._taskFilter.some((name:string) => task.name.includes(name))) {
+            return Promise.resolve([]);
+        }
+
+        if (task.cache && task.restoreCache()) {
+            return Promise.resolve(task.entries);
+        }
+
         runner.startTask(task);
 
         return resolveTasks(task, runner, config).then(() => {
@@ -256,7 +272,7 @@ function evaluateTask(taskl: TaskLike | TaskFactory, runner: Runner, parent?: Ta
 
 function run(task:TaskLike | TaskFactory, config:GenericObject = {}, runner: Runner = new Runner(config)):Promise<Runner> {
 
-    return evaluateTask(task, runner).then(() => runner);
+    return evaluateTask(task, runner, undefined, config).then(() => runner);
 }
 
 
