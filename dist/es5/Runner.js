@@ -19,13 +19,13 @@ var Runner = /** @class */ (function () {
         this._config = config;
         this.logger = new Logger_1.default(config.log);
     }
-    Runner.prototype.startTask = function (task) {
-        if (this.tasks[task.name]) {
+    Runner.prototype.startTask = function (task, resuse) {
+        if (resuse === void 0) { resuse = true; }
+        if (!resuse && this.tasks[task.name]) {
             this.logger.warn("taskname '" + task.name + "' (" + task.fullName + ") already exists, named access (runner.tasks[" + task.name + "]) will be ambigus");
         }
         this.taskTree[task.fullName] = task;
         this.tasks[task.name] = task;
-        this.logger.log('starting task:', task.fullName);
     };
     Runner.prototype.loadConfig = function (p) {
         // return require(p);
@@ -33,9 +33,6 @@ var Runner = /** @class */ (function () {
             p = p.replace('~', this.config.home || process.cwd());
         }
         return require(p);
-    };
-    Runner.prototype.endTask = function (task) {
-        this.logger.log('ending task:', task.fullName);
     };
     Object.defineProperty(Runner.prototype, "config", {
         get: function () {
@@ -197,16 +194,13 @@ function evaluateTask(taskl, runner, parent, config, name) {
         if (task_1.cache && task_1.restoreCache()) {
             return Promise.resolve(task_1.entries);
         }
-        runner.startTask(task_1);
+        task_1.start(runner);
         return resolveTasks(task_1, runner, config).then(function () {
             var inputs = task_1.input instanceof Array ? task_1.input : task_1.input && [task_1.input] || [];
             return Promise.all(inputs.map(function (input) { return filterInput(input, task_1, runner); }))
                 .then(function (inputsSets) { return inputsSets.reduce(function (res, set) { return res.concat(set); }, []); })
                 .then(function (entries) { return evaluateEntries(entries, task_1, runner); });
-        }).then(function (entries) {
-            runner.endTask(task_1);
-            return entries;
-        });
+        }).then(function () { return task_1.end(); });
     }
     else {
         return Promise.resolve([]);

@@ -3,6 +3,7 @@
 import {TaskInterface, Filter, OneOrMore, InputLike, Output, TaskList, EntrySet, GenericObject, DynamicConfig} from './interface';
 import {Runner} from '.';
 import { isString } from 'util';
+import { performance } from 'perf_hooks';
 export default class Task implements TaskInterface {
 
     _config?:GenericObject | DynamicConfig
@@ -19,6 +20,7 @@ export default class Task implements TaskInterface {
     entries: EntrySet = []
     subTasks: GenericObject<Task> = {}
     cache?: boolean|string
+    startTime: number = 0
 
     constructor(runner: Runner, data: TaskInterface, name: string|number = '_root', parent?: Task) {
 
@@ -30,7 +32,18 @@ export default class Task implements TaskInterface {
 
     }
 
+    start(runner: Runner) {
+        this.runner = runner;
+        this.runner.startTask(this);
+        this.startTime = performance.now();
+        this.runner.logger.log('starting task:', this.fullName);
+    }
 
+    end() {
+        const time = Math.round(performance.now() - this.startTime) / 1000;
+        this.runner.logger.log('ending task:', this.fullName, `: ${time} sec.`);
+        return this.entries;
+    }
 
     get fullName(): string {
         return (this.parent && (this.parent.fullName + '.') || '')  + this.name;
@@ -61,6 +74,7 @@ export default class Task implements TaskInterface {
     restoreCache() {
         const entries = this.runner.cache.get(this.cacheKey);
         if (entries) {
+            this.runner.logger.log('restored from cache:', this.fullName);
             this.entries = entries;
             Object.keys(this.subTasks).forEach(name => this.subTasks[name].restoreCache());
             return true;

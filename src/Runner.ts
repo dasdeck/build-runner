@@ -23,16 +23,15 @@ export default class Runner {
         this.logger = new Logger(config.log)
     }
 
-    startTask(task: Task) {
+    startTask(task: Task, resuse:boolean = true) {
 
-        if (this.tasks[task.name]) {
+        if (!resuse && this.tasks[task.name]) {
             this.logger.warn(`taskname '${task.name}' (${task.fullName}) already exists, named access (runner.tasks[${task.name}]) will be ambigus`);
         }
 
         this.taskTree[task.fullName] = task;
         this.tasks[task.name] = task;
 
-        this.logger.log('starting task:', task.fullName);
     }
 
     loadConfig(p: string):TaskInterface|TaskFactory {
@@ -44,10 +43,6 @@ export default class Runner {
 
     }
 
-    endTask(task: Task) {
-
-        this.logger.log('ending task:', task.fullName);
-    }
 
     get config() {
         return this._config;
@@ -246,7 +241,7 @@ function evaluateTask(taskl: TaskLike | TaskFactory, runner: Runner, parent?: Ta
             return Promise.resolve(task.entries);
         }
 
-        runner.startTask(task);
+        task.start(runner);
 
         return resolveTasks(task, runner, config).then(() => {
 
@@ -256,10 +251,7 @@ function evaluateTask(taskl: TaskLike | TaskFactory, runner: Runner, parent?: Ta
             .then(inputsSets => inputsSets.reduce((res, set) => res.concat(set), []))
             .then(entries => evaluateEntries(entries, task, runner));
 
-        }).then(entries => {
-            runner.endTask(task);
-            return entries;
-        });
+        }).then(() => task.end());
 
     } else {
 
