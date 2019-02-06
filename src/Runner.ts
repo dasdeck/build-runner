@@ -134,7 +134,7 @@ function outputEntries(entries: EntrySet, task: Task, runner: Runner): PromisedE
 
         if (task.output) {
 
-            const res = task.output(entries, runner, task);
+            const res = task.output.bind(task)(entries, runner, task);
 
             if (res === true || typeof res === 'undefined') {
                 return entries;
@@ -168,7 +168,7 @@ function filterEntries(entries: PromisedEntries, input:InputLike, task: Task, ru
 
         return <PromisedEntries>Promise.resolve(entries).then(entries => Promise.all(entries.map(entry => {
 
-            const res = filter(entry, runner);
+            const res = filter.bind(task)(entry, runner);
 
             if (res === true || typeof res === 'undefined') {
                 return entry;

@@ -52,7 +52,7 @@ var Task = /** @class */ (function () {
                     config = res;
                 }
             }
-            return Object.assign(parentConfig, config);
+            return Object.assign({}, parentConfig, config);
         },
         set: function (conf) {
             this._config = conf;
@@ -62,7 +62,7 @@ var Task = /** @class */ (function () {
     });
     Object.defineProperty(Task.prototype, "cacheKey", {
         get: function () {
-            return this.fullName + util_1.isString(this.cache) ? "." + this.cache : '';
+            return this.cache && (this.fullName + util_1.isString(this.cache) ? "." + this.cache : '') || '';
         },
         enumerable: true,
         configurable: true

@@ -28,6 +28,7 @@ describe('cache', () => {
 
     });
 
+
     it('cache-task-results', done => {
 
         const task1 = {
@@ -45,6 +46,35 @@ describe('cache', () => {
 
             expect(task1.output).toBeCalledTimes(2);
             expect(runner.entries.task1[0].content).toBe('test');
+            done();
+
+        });
+
+    });
+
+    it('dynamic-cache-key', done => {
+
+
+        const task = (key:string) => ({
+            name: 'task1',
+            cache: key,
+            output: jest.fn(() => [{content: key}])
+        })
+
+        run({
+            tasks: [
+                task('a'),
+                {
+                    output: (e, runner) => {
+                        expect(runner.entries.task1[0].content).toBe('a')
+                    }
+                },
+                task('b')
+            ]
+        }).then((runner: Runner) => {
+
+            // expect(tasCk1.output).toBeCalledTimes(2);
+            expect(runner.entries.task1[0].content).toBe('b');
             done();
 
         });

@@ -111,7 +111,7 @@ function logEntries(entries, runner, name) {
 function outputEntries(entries, task, runner) {
     return Promise.resolve(entries).then(function (entries) {
         if (task.output) {
-            var res = task.output(entries, runner, task);
+            var res = task.output.bind(task)(entries, runner, task);
             if (res === true || typeof res === 'undefined') {
                 return entries;
             }
@@ -138,7 +138,7 @@ function filterEntries(entries, input, task, runner) {
     var filter = typeof input !== 'string' && input.filter || task.filter;
     if (filter) {
         return Promise.resolve(entries).then(function (entries) { return Promise.all(entries.map(function (entry) {
-            var res = filter(entry, runner);
+            var res = filter.bind(task)(entry, runner);
             if (res === true || typeof res === 'undefined') {
                 return entry;
             }

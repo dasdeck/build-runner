@@ -62,7 +62,7 @@ export default class Task implements TaskInterface {
     }
 
     get cacheKey() {
-        return this.fullName + isString(this.cache) ? `.${this.cache}` : '';
+        return this.cache && (this.fullName + isString(this.cache) ? `.${this.cache}` : '') || '';
     }
 
     storeCache() {
@@ -93,7 +93,7 @@ export default class Task implements TaskInterface {
             }
         }
 
-        return Object.assign(parentConfig, config);
+        return Object.assign({}, parentConfig, config);
 
     }
 
