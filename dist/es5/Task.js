@@ -62,7 +62,7 @@ var Task = /** @class */ (function () {
     });
     Object.defineProperty(Task.prototype, "cacheKey", {
         get: function () {
-            return this.cache && (this.fullName + util_1.isString(this.cache) ? "." + this.cache : '') || '';
+            return this.cache && (this.fullName + (util_1.isString(this.cache) ? "." + this.cache : '')) || '';
         },
         enumerable: true,
         configurable: true

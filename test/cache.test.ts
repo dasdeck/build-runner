@@ -28,11 +28,34 @@ describe('cache', () => {
 
     });
 
-
-    it('cache-task-results', done => {
+    it('cache-result', done => {
 
         const task1 = {
             cache: true,
+            output: jest.fn(() => [{content: 'test'}])
+        }
+
+        run({
+            tasks: [
+                task1,
+                {...task1, cache: 'anotherKey'},
+                task1
+            ]
+        }).then((runner: Runner) => {
+
+            expect(task1.output).toBeCalledTimes(3);
+            expect(runner.entries.task1[0].content).toBe('test');
+            done();
+
+        });
+
+    });
+
+    it('cache-results-overide-named-tasks', done => {
+
+        const task1 = {
+            cache: true,
+            name: 'task1',
             output: jest.fn(() => [{content: 'test'}])
         }
 
@@ -52,8 +75,29 @@ describe('cache', () => {
 
     });
 
-    it('dynamic-cache-key', done => {
+    it('unique-cache-key', done => {
 
+        const task = {
+            cache: true,
+            output: jest.fn(() => [{content: 'test'}])
+        }
+
+        run({
+            tasks: [
+                {...task, cache: 'key'},
+                {...task, cache: 'key'}
+            ]
+        }).then((runner: Runner) => {
+
+            expect(task.output).toBeCalledTimes(2);
+            expect(runner.entries.task1[0].content).toBe('test');
+            done();
+
+        });
+
+    });
+
+    it('dynamic-cache-key', done => {
 
         const task = (key:string) => ({
             name: 'task1',
