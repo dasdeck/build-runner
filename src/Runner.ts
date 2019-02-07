@@ -147,11 +147,6 @@ function outputEntries(entries: EntrySet, task: Task, runner: Runner): PromisedE
             return entries;
         }
 
-    }).then(entries => {
-        if (task.cache) {
-            task.storeCache();
-        }
-        return entries;
     }).catch(err => {
 
         throw `Error in task ${task.fullName}.output : ${err} \n ${err.stack}`;
@@ -195,7 +190,6 @@ function evaluateEntries(entries: EntrySet, task:Task, runner:Runner):PromisedEn
         }
 
         task.entries = entries;
-        task.storeCache();
         logEntries(entries, runner, task.name);
         return entries;
     });
@@ -233,10 +227,6 @@ function evaluateTask(taskl: TaskLike | TaskFactory, runner: Runner, parent?: Ta
             parent.subTasks[task.name] = task;
         }
 
-        if (parent && !parent.parent && config._taskFilter && !config._taskFilter.some((name:string) => task.name.includes(name))) {
-            return Promise.resolve([]);
-        }
-
         if (task.cache && task.restoreCache()) {
             return Promise.resolve(task.entries);
         }
@@ -244,6 +234,10 @@ function evaluateTask(taskl: TaskLike | TaskFactory, runner: Runner, parent?: Ta
         task.start(runner);
 
         return resolveTasks(task, runner, config).then(() => {
+
+            if (config._taskFilter && !config._taskFilter.some((name:string) => task.matches(name))) {
+                return Promise.resolve([]);
+            }
 
             const inputs = task.input instanceof Array ? task.input : task.input && [task.input] || [];
 

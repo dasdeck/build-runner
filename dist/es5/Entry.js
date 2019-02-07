@@ -36,6 +36,13 @@ var Entry = /** @class */ (function () {
             return new Entry(data);
         }
     };
+    Entry.prototype.getData = function () {
+        return {
+            src: this.src,
+            dest: this.dest,
+            content: this.content
+        };
+    };
     Entry.prototype.inDest = function (dest) {
         if (dest) {
             return new Entry(__assign({}, this, { dest: path.join(dest, this.dest || '') }));

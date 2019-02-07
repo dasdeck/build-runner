@@ -1,9 +1,11 @@
 
 
-import {TaskInterface, Filter, OneOrMore, InputLike, Output, TaskList, EntrySet, GenericObject, DynamicConfig} from './interface';
+import {TaskInterface, Filter, OneOrMore, InputLike, Output, TaskList, EntrySet, GenericObject, DynamicConfig, EntryTree} from './interface';
 import {Runner} from '.';
 import { isString } from 'util';
 import { performance } from 'perf_hooks';
+import Entry from './Entry';
+
 export default class Task implements TaskInterface {
 
     _config?:GenericObject | DynamicConfig
@@ -17,7 +19,7 @@ export default class Task implements TaskInterface {
     parent?:Task
     parallel?:boolean
     runner: Runner
-    entries: EntrySet = []
+    _entries: EntrySet = []
     subTasks: GenericObject<Task> = {}
     cache?: boolean|string
     startTime: number = 0
@@ -26,6 +28,10 @@ export default class Task implements TaskInterface {
 
         this.runner = runner;
         this.name = typeof name === "number" ? `task${name + 1}` : name;
+
+        if (this.name.includes(this.seperator)) {
+            throw new Error(`Tasknames must not include: '${this.seperator}'`)
+        // }
         this.parent = parent;
 
         Object.assign(this, data);
@@ -45,8 +51,44 @@ export default class Task implements TaskInterface {
         return this.entries;
     }
 
+    get seperator() {
+        return this.runner.config.seperator || '.';
+    }
+
+    getEntryTree() : EntryTree {
+        
+        return {
+            entries: this.entries.map(entry => entry.getData()),
+            tasks: Object.keys(this.subTasks).reduce((res: GenericObject<EntryTree>, name:string) => {
+                res[name] = this.subTasks[name].getEntryTree();
+                return res;
+            }, {} as GenericObject<EntryTree>)
+        }
+    }
+
+    hydrate(entryTree: EntryTree) {
+        this.entries = entryTree.entries.map(Entry.forceEntry) as EntrySet;
+        Object.keys(entryTree.tasks).forEach((name:string) => this.subTasks[name].hydrate(entryTree.tasks[name]));
+    }
+
     get fullName(): string {
-        return (this.parent && (this.parent.fullName + '.') || '')  + this.name;
+        return (this.parent && (this.parent.fullName + this.seperator) || '')  + this.name;
+    }
+
+    get rootTask(): Task {
+        let task:Task = this;
+        while (task.parent) {
+            task = task.parent;
+        }
+        return task;
+    }
+
+    matches(name: string): boolean {
+        return this.searchName === name;
+    }
+
+    get searchName(): string {
+        return this.fullName.substr(this.rootTask.name.length + 1);
     }
 
     set base(base: string) {
@@ -63,6 +105,15 @@ export default class Task implements TaskInterface {
 
     get cacheKey() {
         return this.cache && (this.fullName + (isString(this.cache) ? `.${this.cache}` : '')) || '';
+    }
+
+    get entries() {
+        return this._entries;
+    }
+
+    set entries(value: EntrySet) {
+        this._entries = value;
+        this.storeCache();
     }
 
     storeCache() {

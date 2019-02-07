@@ -16,7 +16,12 @@ interface EntryLike {
 }
 
 type EntrySet = Entry[];
-type PromisedEntries = Promise<EntrySet>
+type PromisedEntries = Promise<EntrySet>;
+
+interface EntryTree {
+    entries: GenericObject[],
+    tasks: GenericObject<EntryTree>
+}
 
 type EntryResult = EntryLike | boolean | void;
 type PromisedEntryResult = Promise<EntryResult>;
@@ -64,6 +69,7 @@ interface LoggerConfig {
 
 
 export {
+    EntryTree,
     LoggerConfig,
     Content,
     EntryLike,

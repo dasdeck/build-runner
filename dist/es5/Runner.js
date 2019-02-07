@@ -125,11 +125,6 @@ function outputEntries(entries, task, runner) {
         else {
             return entries;
         }
-    }).then(function (entries) {
-        if (task.cache) {
-            task.storeCache();
-        }
-        return entries;
     }).catch(function (err) {
         throw "Error in task " + task.fullName + ".output : " + err + " \n " + err.stack;
     });
@@ -159,7 +154,6 @@ function evaluateEntries(entries, task, runner) {
             throw 'entry should be resolved before logging';
         }
         task.entries = entries;
-        task.storeCache();
         logEntries(entries, runner, task.name);
         return entries;
     });
@@ -188,14 +182,14 @@ function evaluateTask(taskl, runner, parent, config, name) {
         if (parent) {
             parent.subTasks[task_1.name] = task_1;
         }
-        if (parent && !parent.parent && config._taskFilter && !config._taskFilter.some(function (name) { return task_1.name.includes(name); })) {
-            return Promise.resolve([]);
-        }
         if (task_1.cache && task_1.restoreCache()) {
             return Promise.resolve(task_1.entries);
         }
         task_1.start(runner);
         return resolveTasks(task_1, runner, config).then(function () {
+            if (config._taskFilter && !config._taskFilter.some(function (name) { return task_1.matches(name); })) {
+                return Promise.resolve([]);
+            }
             var inputs = task_1.input instanceof Array ? task_1.input : task_1.input && [task_1.input] || [];
             return Promise.all(inputs.map(function (input) { return filterInput(input, task_1, runner); }))
                 .then(function (inputsSets) { return inputsSets.reduce(function (res, set) { return res.concat(set); }, []); })

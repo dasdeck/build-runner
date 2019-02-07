@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
-import {Content, EntryLike} from './interface';
+import {Content, EntryLike, GenericObject} from './interface';
 
 
 
@@ -37,6 +37,14 @@ export default class Entry implements EntryLike {
         }
     }
 
+    getData(): GenericObject {
+        return {
+            src: this.src,
+            dest: this.dest,
+            content: this.content
+        }
+    }
+
     inDest(dest?: string): Entry {
         if (dest) {
             return new Entry({...this, dest: path.join(dest, this.dest || '')})
@@ -45,7 +53,7 @@ export default class Entry implements EntryLike {
         }
     }
 
-    loadContent(encoding = 'utf8', override: boolean = false): Content | void {
+    loadContent(encoding: string | null = 'utf8', override: boolean = false): Content | void {
         if ((!this.content || override) && this.src && fs.existsSync(this.src)) {
             this.content = fs.readFileSync(this.src, encoding);
         }

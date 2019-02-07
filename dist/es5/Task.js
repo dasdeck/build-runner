@@ -2,15 +2,19 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var util_1 = require("util");
 var perf_hooks_1 = require("perf_hooks");
+var Entry_1 = require("./Entry");
 var Task = /** @class */ (function () {
     function Task(runner, data, name, parent) {
         if (name === void 0) { name = '_root'; }
         this.tasks = {};
-        this.entries = [];
+        this._entries = [];
         this.subTasks = {};
         this.startTime = 0;
         this.runner = runner;
         this.name = typeof name === "number" ? "task" + (name + 1) : name;
+        if (this.name.includes(this.seperator)) {
+            throw new Error("Tasknames must not include: '" + this.seperator + "'");
+        }
         this.parent = parent;
         Object.assign(this, data);
     }
@@ -25,9 +29,52 @@ var Task = /** @class */ (function () {
         this.runner.logger.log('ending task:', this.fullName, ": " + time + " sec.");
         return this.entries;
     };
+    Object.defineProperty(Task.prototype, "seperator", {
+        get: function () {
+            return this.runner.config.seperator || '.';
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Task.prototype.getEntryTree = function () {
+        var _this = this;
+        return {
+            entries: this.entries.map(function (entry) { return entry.getData(); }),
+            tasks: Object.keys(this.subTasks).reduce(function (res, name) {
+                res[name] = _this.subTasks[name].getEntryTree();
+                return res;
+            }, {})
+        };
+    };
+    Task.prototype.hydrate = function (entryTree) {
+        var _this = this;
+        this.entries = entryTree.entries.map(Entry_1.default.forceEntry);
+        Object.keys(entryTree.tasks).forEach(function (name) { return _this.subTasks[name].hydrate(entryTree.tasks[name]); });
+    };
     Object.defineProperty(Task.prototype, "fullName", {
         get: function () {
-            return (this.parent && (this.parent.fullName + '.') || '') + this.name;
+            return (this.parent && (this.parent.fullName + this.seperator) || '') + this.name;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Task.prototype, "rootTask", {
+        get: function () {
+            var task = this;
+            while (task.parent) {
+                task = task.parent;
+            }
+            return task;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Task.prototype.matches = function (name) {
+        return this.searchName === name;
+    };
+    Object.defineProperty(Task.prototype, "searchName", {
+        get: function () {
+            return this.fullName.substr(this.rootTask.name.length + 1);
         },
         enumerable: true,
         configurable: true
@@ -63,6 +110,17 @@ var Task = /** @class */ (function () {
     Object.defineProperty(Task.prototype, "cacheKey", {
         get: function () {
             return this.cache && (this.fullName + (util_1.isString(this.cache) ? "." + this.cache : '')) || '';
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Task.prototype, "entries", {
+        get: function () {
+            return this._entries;
+        },
+        set: function (value) {
+            this._entries = value;
+            this.storeCache();
         },
         enumerable: true,
         configurable: true
