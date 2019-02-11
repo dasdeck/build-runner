@@ -7,7 +7,7 @@ describe('cli', () => {
         const task1 = {name: 'task1', output: jest.fn()};
         const task2 = {name: 'task2', output: jest.fn()};
 
-        runCli(({test}) => {
+        runCli(['task1', '--test', 'test'], ({test}) => {
 
             expect(test).toBe('test');
             return {
@@ -17,7 +17,7 @@ describe('cli', () => {
                 ]
             }
 
-        }, ['task1', '--test', 'test']).then(() => {
+        }).then(() => {
 
             expect(task1.output).toBeCalledTimes(1);
             expect(task2.output).not.toBeCalled();
@@ -42,7 +42,7 @@ describe('cli', () => {
             ]
         };
 
-        runCli(() => {
+        runCli(['task2.subTask'], () => {
 
             return {
                 tasks: [
@@ -51,7 +51,7 @@ describe('cli', () => {
                 ]
             }
 
-        }, ['task2.subTask']).then(() => {
+        }).then(() => {
 
             expect(task1.output).not.toBeCalled();
             expect(task2.output).not.toBeCalled();

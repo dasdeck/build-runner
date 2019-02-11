@@ -28,12 +28,13 @@ var Entry = /** @class */ (function () {
         }
         Object.assign(this, data);
     }
-    Entry.forceEntry = function (data) {
+    Entry.forceEntry = function (data, prototype) {
+        if (prototype === void 0) { prototype = Entry; }
         if (data instanceof Entry) {
             return data;
         }
         else if (typeof data === 'object') {
-            return new Entry(data);
+            return new prototype(data);
         }
     };
     Entry.prototype.getData = function () {
@@ -43,9 +44,13 @@ var Entry = /** @class */ (function () {
             content: this.content
         };
     };
+    Entry.prototype.clone = function (data) {
+        if (data === void 0) { data = {}; }
+        return new this.constructor(__assign({}, this, data));
+    };
     Entry.prototype.inDest = function (dest) {
         if (dest) {
-            return new Entry(__assign({}, this, { dest: path.join(dest, this.dest || '') }));
+            return this.clone({ dest: path.join(dest, this.dest || '') });
         }
         else {
             return this;

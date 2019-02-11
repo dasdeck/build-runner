@@ -4,6 +4,7 @@ import Entry from './Entry';
 import Runner from './Runner';
 import Task from './Task';
 
+type Class<T=any> = { new(...args: any[]): T; };
 type OneOrMore<T> = T | T[];
 type GenericObject<T=any> = { [key: string]: T };
 type MaybePromise<T> = Promise<T|void> | T | void;
@@ -69,6 +70,7 @@ interface LoggerConfig {
 
 
 export {
+    Class,
     EntryTree,
     LoggerConfig,
     Content,

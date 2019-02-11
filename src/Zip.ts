@@ -1,55 +1,144 @@
-import {EntrySet} from './interface';
+import {EntrySet, EntryLike, GenericObject, Content} from './interface';
 import Entry from './Entry';
 import * as AdmZip from 'adm-zip';
 import * as path from 'path';
 import * as fs from 'fs';
 
-export default class Zip {
+declare abstract class AdmZipEntry {
+    entryName: string
+    abstract getData():Buffer
+    wrapper: AdmWrapperEntry
+}
 
-    base?: Buffer
+type EntryMap = GenericObject<Entry>;
 
-    constructor(entries?: EntrySet | Buffer) {
+class AdmWrapperEntry extends Entry {
 
-        if (entries instanceof Buffer) {
-            this.base = entries;
-        } else if (entries instanceof Array) {
-            this.setEntries(entries);
+    _entry: AdmZipEntry
+    _data?: Buffer
+    _content?: Content
+
+    constructor (entry: AdmZipEntry, src: string = 'zip') {
+        super({src});
+        entry.wrapper = this;
+        this._entry = entry;
+    }
+
+    get content(): Content {
+        if (this._content) {
+            return this._content;
+
+        } else if (!this._data) {
+            this._data = this._entry.getData();
+        }
+        return this._data;
+    }
+
+    set content(content: Content) {
+        this._content = content;
+    }
+
+    loadContent(encoding: string = 'utf8'): String {
+        return this.content.toString(encoding);
+    }
+
+    get dest() {
+        return this._entry.entryName;
+    }
+
+    set dest(val) {
+        if (this._entry) {
+            this._entry.entryName = val;
         }
     }
 
-    entries: {[s: string]: Entry} = {}
+}
+export default class Zip extends Entry {
+
+    content?: AdmZip
+    _entries: EntryMap = {}
+
+    constructor(data?: EntryLike) {
+        super(data || {dest: 'zip'});
+
+        if (this.content instanceof Array) {
+            this.setEntries(this.content);
+            delete this.content;
+        }
+    }
+
+    get baseZip(): AdmZip {
+
+        if (!this.content && this.src) {
+            this.content = new AdmZip(this.src);
+            delete this.src;
+        } else if (this.content instanceof Buffer) {
+            this.content = new AdmZip(this.content);
+        } else if (!this.content) {
+            this.content = new AdmZip();
+        }
+        return this.content;
+    }
+
 
     setEntry(entry: Entry, replace = true) {
         if (!entry.dest) {
             throw 'entries need a target!';
         }
 
-        if (!replace && this.entries[entry.dest]) {
+        if (!replace && this._entries[entry.dest]) {
             throw "entry already assigned";
         }
-        this.entries[entry.dest] = entry;
+        this._entries[entry.dest] = entry;
+    }
+
+    get entries(): EntrySet {
+
+        const base = this.baseZip.getEntries().reduce((map: EntryMap, e: any) => {
+
+            const entry = e.wrapper || new AdmWrapperEntry(e as AdmZipEntry);
+            map[entry.dest] = entry;
+            return map;
+        }, {});
+
+        const map = Object.assign({}, base, this._entries);
+        return Object.keys(map).map(name => map[name]);
+
     }
 
     setEntries(entries: EntrySet) {
         entries.forEach(entry => this.setEntry(entry));
     }
 
-    toAdm(zip = new AdmZip(this.base as Buffer)): AdmZip {
+    extractAllTo(dest: string, overwrite?: boolean ) {
+        this.toAdm().extractAllTo(dest, overwrite);
+    }
 
-        Object.keys(this.entries).forEach(target => {
+    writeZip(p: string) {
+        this.toAdm().writeZip(p);
+    }
 
-            const entry = this.entries[target];
+    toBuffer():Buffer {
+        return this.toAdm().toBuffer();
+    }
+
+    toAdm(): AdmZip {
+
+        const zip = new AdmZip;
+
+        this.entries.forEach(entry => {
 
             if (entry.content) {
 
                 if (entry.content instanceof Buffer) {
-                    zip.addFile(entry.dest, entry.content);
+                    if (entry.content.length) {
+                        zip.addFile(entry.dest, entry.content);
+                    }
                 } else if (entry.content instanceof Zip) {
                     zip.addFile(entry.dest, entry.content.toAdm().toBuffer());
                 } else if (typeof entry.content === 'string') {
                     zip.addFile(entry.dest, Buffer.from(entry.content));
                 }
-
             } else if (entry.src) {
 
                 if (path.basename(entry.src) !== path.basename(entry.dest)) {

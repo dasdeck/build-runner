@@ -4,10 +4,12 @@ import * as request from 'request-promise-native';
 import {resolver, map} from './util';
 import Entry from './Entry';
 import Task from './Task';
-import {GenericObject, TaskFactory, TaskLike, EntrySet, PromisedEntries, PromisedEntryResult, Input, InputLike, EntryResult, TaskInterface} from './interface';
+import {GenericObject, TaskFactory, TaskLike, EntrySet, PromisedEntries, PromisedEntryResult, Input, InputLike, EntryResult, TaskInterface, Class, EntryLike} from './interface';
 import Cache from './Cache';
 import Logger from './Logger';
 import { isString } from 'util';
+import { ok } from 'assert';
+import { Zip } from '.';
 
 export default class Runner {
 
@@ -68,6 +70,19 @@ const pathResolvers = [
     }
 ]
 
+function createEntry(data: EntryLike): Entry {
+
+
+    if (data.src && data.src.endsWith('.zip')) {
+        return new Zip(data);
+    } else {
+        return new Entry(data);
+    }
+
+
+
+}
+
 function resolvePath(src: string, input: Input, task?: Task): PromisedEntries {
 
     if (task) {
@@ -78,7 +93,7 @@ function resolvePath(src: string, input: Input, task?: Task): PromisedEntries {
 
             if (res) {
                 const dest = input.dest || task.dest;
-                return Promise.resolve(res).then(res => Promise.all(res)).then(res => res.map((data: any) => new Entry(data).inDest(dest))).catch(err => {
+                return Promise.resolve(res).then(res => Promise.all(res)).then(res => res.map((data: any) => createEntry(data).inDest(dest))).catch(err => {
                     throw `Error in task ${task.fullName}.input : ${err} \n ${err.stack}`;
                 });
             }
@@ -139,7 +154,7 @@ function outputEntries(entries: EntrySet, task: Task, runner: Runner): PromisedE
             if (res === true || typeof res === 'undefined') {
                 return entries;
             } else if(res) {
-                return Promise.resolve(res).then(res => (res instanceof Array && <Entry[]>res.map(Entry.forceEntry) || []).filter(v => v));
+                return Promise.resolve(res).then(res => (res instanceof Array && <Entry[]>res.map(o => Entry.forceEntry(o)) || []).filter(v => v));
             } else {
                 return [];
             }

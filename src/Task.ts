@@ -31,7 +31,7 @@ export default class Task implements TaskInterface {
 
         if (this.name.includes(this.seperator)) {
             throw new Error(`Tasknames must not include: '${this.seperator}'`)
-        // }
+        }
         this.parent = parent;
 
         Object.assign(this, data);
@@ -56,7 +56,7 @@ export default class Task implements TaskInterface {
     }
 
     getEntryTree() : EntryTree {
-        
+
         return {
             entries: this.entries.map(entry => entry.getData()),
             tasks: Object.keys(this.subTasks).reduce((res: GenericObject<EntryTree>, name:string) => {
@@ -67,7 +67,7 @@ export default class Task implements TaskInterface {
     }
 
     hydrate(entryTree: EntryTree) {
-        this.entries = entryTree.entries.map(Entry.forceEntry) as EntrySet;
+        this.entries = entryTree.entries.map(o => Entry.forceEntry(o)) as EntrySet;
         Object.keys(entryTree.tasks).forEach((name:string) => this.subTasks[name].hydrate(entryTree.tasks[name]));
     }
 

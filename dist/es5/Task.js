@@ -48,7 +48,7 @@ var Task = /** @class */ (function () {
     };
     Task.prototype.hydrate = function (entryTree) {
         var _this = this;
-        this.entries = entryTree.entries.map(Entry_1.default.forceEntry);
+        this.entries = entryTree.entries.map(function (o) { return Entry_1.default.forceEntry(o); });
         Object.keys(entryTree.tasks).forEach(function (name) { return _this.subTasks[name].hydrate(entryTree.tasks[name]); });
     };
     Object.defineProperty(Task.prototype, "fullName", {

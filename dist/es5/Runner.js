@@ -8,6 +8,7 @@ var Entry_1 = require("./Entry");
 var Task_1 = require("./Task");
 var Cache_1 = require("./Cache");
 var Logger_1 = require("./Logger");
+var _1 = require(".");
 var Runner = /** @class */ (function () {
     function Runner(config) {
         if (config === void 0) { config = { home: process.cwd() }; }
@@ -59,6 +60,14 @@ var pathResolvers = [
         return glob.sync(src, { ignore: ignore, nodir: true, cwd: base }).map(function (dest) { return ({ dest: dest, src: path.join(base, dest) }); });
     }
 ];
+function createEntry(data) {
+    if (data.src && data.src.endsWith('.zip')) {
+        return new _1.Zip(data);
+    }
+    else {
+        return new Entry_1.default(data);
+    }
+}
 function resolvePath(src, input, task) {
     if (task) {
         var _loop_1 = function (i) {
@@ -66,7 +75,7 @@ function resolvePath(src, input, task) {
             var res = resolver_1(src, input, task);
             if (res) {
                 var dest_1 = input.dest || task.dest;
-                return { value: Promise.resolve(res).then(function (res) { return Promise.all(res); }).then(function (res) { return res.map(function (data) { return new Entry_1.default(data).inDest(dest_1); }); }).catch(function (err) {
+                return { value: Promise.resolve(res).then(function (res) { return Promise.all(res); }).then(function (res) { return res.map(function (data) { return createEntry(data).inDest(dest_1); }); }).catch(function (err) {
                         throw "Error in task " + task.fullName + ".input : " + err + " \n " + err.stack;
                     }) };
             }
@@ -116,7 +125,7 @@ function outputEntries(entries, task, runner) {
                 return entries;
             }
             else if (res) {
-                return Promise.resolve(res).then(function (res) { return (res instanceof Array && res.map(Entry_1.default.forceEntry) || []).filter(function (v) { return v; }); });
+                return Promise.resolve(res).then(function (res) { return (res instanceof Array && res.map(function (o) { return Entry_1.default.forceEntry(o); }) || []).filter(function (v) { return v; }); });
             }
             else {
                 return [];

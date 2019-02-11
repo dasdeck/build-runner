@@ -1,8 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
-import {Content, EntryLike, GenericObject} from './interface';
-
+import {Content, EntryLike, GenericObject, Class} from './interface';
 
 
 export default class Entry implements EntryLike {
@@ -12,6 +11,7 @@ export default class Entry implements EntryLike {
     dest:string = ''
 
     constructor(data: EntryLike) {
+
         if (data instanceof Entry) {
             throw 'do not create entry from entry (yet)';
         }
@@ -28,12 +28,12 @@ export default class Entry implements EntryLike {
 
     }
 
-    static forceEntry(data?: any): Entry | void {
+    static forceEntry(data?: any, prototype: Class = Entry): Entry | void {
 
         if (data instanceof Entry) {
             return data;
         } else if (typeof data === 'object') {
-            return new Entry(data);
+            return new prototype(data);
         }
     }
 
@@ -45,9 +45,13 @@ export default class Entry implements EntryLike {
         }
     }
 
+    clone(data: GenericObject = {}) {
+        return new (this.constructor as any)({...this, ...data});
+    }
+
     inDest(dest?: string): Entry {
         if (dest) {
-            return new Entry({...this, dest: path.join(dest, this.dest || '')})
+            return this.clone({dest: path.join(dest, this.dest || '')});
         } else {
             return this;
         }
