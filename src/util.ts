@@ -19,9 +19,11 @@ function map<T=any>(objOrArray: GenericObject | T[], cb: any): T[] {
     }
 }
 
-const isString = (val:any) => (typeof val === 'string');
+const isString = (val:any): val is String  => typeof val === 'string';
+const isFunction =(val:any): val is Function => typeof val === 'function';
 
 export {
+    isFunction,
     isString,
     map,
     resolver

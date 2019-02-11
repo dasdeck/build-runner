@@ -2,6 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 import {Content, EntryLike, GenericObject, Class} from './interface';
+import {isFunction} from './util';
 
 
 export default class Entry implements EntryLike {
@@ -45,17 +46,30 @@ export default class Entry implements EntryLike {
         }
     }
 
-    clone(data: GenericObject = {}) {
+
+    with(data: Function | GenericObject = {}):Entry {
+
+        if (isFunction(data)) {
+            data = data(this);
+        }
+
         return new (this.constructor as any)({...this, ...data});
+
+    }
+
+    withContent(content: Function | Content): Entry {
+        return this.with({content: isFunction(content) ? content(this) : content})
     }
 
     inDest(dest?: string): Entry {
         if (dest) {
-            return this.clone({dest: path.join(dest, this.dest || '')});
+            return this.with({dest: path.join(dest, this.dest || '')});
         } else {
             return this;
         }
     }
+
+
 
     loadContent(encoding: string | null = 'utf8', override: boolean = false): Content | void {
         if ((!this.content || override) && this.src && fs.existsSync(this.src)) {

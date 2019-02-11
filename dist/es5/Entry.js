@@ -13,6 +13,7 @@ var __assign = (this && this.__assign) || function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var path = require("path");
 var fs = require("fs");
+var util_1 = require("./util");
 var Entry = /** @class */ (function () {
     function Entry(data) {
         this.dest = '';
@@ -44,13 +45,19 @@ var Entry = /** @class */ (function () {
             content: this.content
         };
     };
-    Entry.prototype.clone = function (data) {
+    Entry.prototype.with = function (data) {
         if (data === void 0) { data = {}; }
+        if (util_1.isFunction(data)) {
+            data = data(this);
+        }
         return new this.constructor(__assign({}, this, data));
+    };
+    Entry.prototype.withContent = function (content) {
+        return this.with({ content: util_1.isFunction(content) ? content(this) : content });
     };
     Entry.prototype.inDest = function (dest) {
         if (dest) {
-            return this.clone({ dest: path.join(dest, this.dest || '') });
+            return this.with({ dest: path.join(dest, this.dest || '') });
         }
         else {
             return this;

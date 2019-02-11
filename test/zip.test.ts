@@ -43,7 +43,7 @@ describe('zip', () => {
 
         const zip = new Zip({src: path.join(__dirname, 'assets', 'test.txt.zip')});
 
-        zip.entries[0].content = (zip.entries[0].loadContent('utf8') as String).replace('test', 'tested');
+        zip.entries[0] = zip.entries[0].withContent('tested');
 
         const reopenedZip = new Zip({content: zip.toBuffer()});
 
@@ -52,6 +52,7 @@ describe('zip', () => {
         done();
 
     });
+
 
 
 });

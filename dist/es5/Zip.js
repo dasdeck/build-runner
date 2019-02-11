@@ -19,13 +19,18 @@ var path = require("path");
 var fs = require("fs");
 var AdmWrapperEntry = /** @class */ (function (_super) {
     __extends(AdmWrapperEntry, _super);
-    function AdmWrapperEntry(entry, src) {
-        if (src === void 0) { src = 'zip'; }
-        var _this = _super.call(this, { src: src }) || this;
-        entry.wrapper = _this;
-        _this._entry = entry;
+    function AdmWrapperEntry(data, entry) {
+        var _this = _super.call(this, data) || this;
+        _this._entry = entry || data._entry;
+        if (!_this._entry) {
+            throw 'Wrapper entries need an AdmZip entry';
+        }
+        _this._entry.wrapper = _this;
         return _this;
     }
+    AdmWrapperEntry.prototype.isConnected = function () {
+        return this._entry.wrapper === this;
+    };
     Object.defineProperty(AdmWrapperEntry.prototype, "content", {
         get: function () {
             if (this._content) {
@@ -101,7 +106,7 @@ var Zip = /** @class */ (function (_super) {
     Object.defineProperty(Zip.prototype, "entries", {
         get: function () {
             var base = this.baseZip.getEntries().reduce(function (map, e) {
-                var entry = e.wrapper || new AdmWrapperEntry(e);
+                var entry = e.wrapper || new AdmWrapperEntry({ src: 'src' }, e);
                 map[entry.dest] = entry;
                 return map;
             }, {});

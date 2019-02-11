@@ -18,10 +18,19 @@ class AdmWrapperEntry extends Entry {
     _data?: Buffer
     _content?: Content
 
-    constructor (entry: AdmZipEntry, src: string = 'zip') {
-        super({src});
-        entry.wrapper = this;
-        this._entry = entry;
+    constructor (data: EntryLike, entry: AdmZipEntry) {
+        super(data);
+        this._entry = entry || (data as AdmWrapperEntry)._entry;
+
+        if (!this._entry) {
+            throw 'Wrapper entries need an AdmZip entry';
+        }
+
+        this._entry.wrapper = this;
+    }
+
+    isConnected() {
+        return this._entry.wrapper === this;
     }
 
     get content(): Content {
@@ -96,9 +105,10 @@ export default class Zip extends Entry {
 
         const base = this.baseZip.getEntries().reduce((map: EntryMap, e: any) => {
 
-            const entry = e.wrapper || new AdmWrapperEntry(e as AdmZipEntry);
+            const entry = e.wrapper || new AdmWrapperEntry({src: 'src'}, e as AdmZipEntry);
             map[entry.dest] = entry;
             return map;
+
         }, {});
 
         const map = Object.assign({}, base, this._entries);
