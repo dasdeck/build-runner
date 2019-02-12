@@ -40,7 +40,7 @@ export default function runCli(args:string[] = process.argv.slice(2), config?: T
         if (config) {
             return run(config, a);
         } else {
-            throw 'no config found'
+            throw new Error('no config found')
         }
 
     });

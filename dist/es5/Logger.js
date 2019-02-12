@@ -14,6 +14,9 @@ var Logger = /** @class */ (function () {
                 _this[name] = console[name];
             }
         });
+        if (config.level >= 10) {
+            Error.stackTraceLimit = Infinity;
+        }
     }
     return Logger;
 }());

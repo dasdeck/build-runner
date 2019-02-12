@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 import {Content, EntryLike, GenericObject, Class} from './interface';
-import {isFunction} from './util';
+import {isFunction, isUndefined} from './util';
 
 
 export default class Entry implements EntryLike {
@@ -14,11 +14,11 @@ export default class Entry implements EntryLike {
     constructor(data: EntryLike) {
 
         if (data instanceof Entry) {
-            throw 'do not create entry from entry (yet)';
+            throw new Error('do not create entry from entry (yet)');
         }
 
-        if (!data.src && !data.content) {
-            throw 'who needs entries without source nor content?'
+        if (!data.src && isUndefined(data.content)) {
+            throw new Error('who needs entries without source nor content?');
         }
 
         if (!data.dest && data.src) {
@@ -58,7 +58,7 @@ export default class Entry implements EntryLike {
     }
 
     withContent(content: Function | Content): Entry {
-        return this.with({content: isFunction(content) ? content(this) : content})
+        return this.with({content: isFunction(content) ? content(this.loadContent()) : content})
     }
 
     inDest(dest?: string): Entry {

@@ -11,7 +11,7 @@ describe('error', () => {
 
         }).catch(err => {
 
-            expect(err).toContain('_root.input');
+            expect(err.message).toContain('_root.input');
             done();
 
         });
@@ -24,12 +24,12 @@ describe('error', () => {
         run({
 
             input: '**/*',
-            filter: () => {throw 'err'}
+            filter: () => {throw new Error('err')}
 
         }).catch(err => {
 
-            expect(err).toContain('_root.filter');
-            expect(err).toContain(': err');
+            expect(err.message).toContain('_root.filter');
+            expect(err.message).toContain(': err');
             done();
 
         });
@@ -45,7 +45,7 @@ describe('error', () => {
 
         }).catch(err => {
 
-            expect(err).toContain('_root.filter');
+            expect(err.message).toContain('_root.filter');
             done();
 
         });
@@ -57,12 +57,12 @@ describe('error', () => {
         run({
 
             input: '**/*',
-            output: () => {throw 'err'}
+            output: () => {throw new Error('err')}
 
         }).catch(err => {
 
-            expect(err).toContain('_root.output');
-            expect(err).toContain(': err');
+            expect(err.message).toContain('_root.output');
+            expect(err.message).toContain(': err');
             done();
 
         });
@@ -76,14 +76,14 @@ describe('error', () => {
             input: '**/*',
             tasks: {
                 test: {
-                    output: () => {throw 'err'}
+                    output: () => {throw new Error('err')}
                 }
             }
 
         }).catch(err => {
 
-            expect(err).toContain('_root.test.output');
-            expect(err).toContain(': err');
+            expect(err.message).toContain('_root.test.output');
+            expect(err.message).toContain(': err');
             done();
 
         });

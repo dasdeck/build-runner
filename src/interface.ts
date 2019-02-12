@@ -9,7 +9,7 @@ type OneOrMore<T> = T | T[];
 type GenericObject<T=any> = { [key: string]: T };
 type MaybePromise<T> = Promise<T|void> | T | void;
 
-type Content = string|Buffer|Zip;
+type Content = string|Buffer|Zip|[];
 interface EntryLike {
     src?: string
     content?: Content

@@ -76,7 +76,7 @@ function resolvePath(src, input, task) {
             if (res) {
                 var dest_1 = input.dest || task.dest;
                 return { value: Promise.resolve(res).then(function (res) { return Promise.all(res); }).then(function (res) { return res.map(function (data) { return createEntry(data).inDest(dest_1); }); }).catch(function (err) {
-                        throw "Error in task " + task.fullName + ".input : " + err + " \n " + err.stack;
+                        throw new Error("Error in task " + task.fullName + ".input : " + err + " \n " + err.stack);
                     }) };
             }
         };
@@ -135,7 +135,7 @@ function outputEntries(entries, task, runner) {
             return entries;
         }
     }).catch(function (err) {
-        throw "Error in task " + task.fullName + ".output : " + err + " \n " + err.stack;
+        throw new Error("Error in task " + task.fullName + ".output : " + err + " \n " + err.stack);
     });
 }
 function filterEntries(entries, input, task, runner) {
@@ -150,7 +150,7 @@ function filterEntries(entries, input, task, runner) {
                 return Promise.resolve(res).then(Entry_1.default.forceEntry);
             }
         })).then(function (res) { return res.filter(function (v) { return v; }); }); }).catch(function (err) {
-            throw "Error in task " + task.fullName + ".filter : " + err + " \n " + err.stack;
+            throw new Error("Error in task " + task.fullName + ".filter : " + err + " \n " + err.stack);
         });
     }
     else {
@@ -160,7 +160,7 @@ function filterEntries(entries, input, task, runner) {
 function evaluateEntries(entries, task, runner) {
     return Promise.all(entries).then(function (entries) { return outputEntries(entries, task, runner); }).then(function (entries) {
         if (entries.find(function (entry) { return entry instanceof Promise; })) {
-            throw 'entry should be resolved before logging';
+            throw new Error('entry should be resolved before logging');
         }
         task.entries = entries;
         logEntries(entries, runner, task.name);

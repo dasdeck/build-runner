@@ -18,10 +18,10 @@ var Entry = /** @class */ (function () {
     function Entry(data) {
         this.dest = '';
         if (data instanceof Entry) {
-            throw 'do not create entry from entry (yet)';
+            throw new Error('do not create entry from entry (yet)');
         }
-        if (!data.src && !data.content) {
-            throw 'who needs entries without source nor content?';
+        if (!data.src && util_1.isUndefined(data.content)) {
+            throw new Error('who needs entries without source nor content?');
         }
         if (!data.dest && data.src) {
             this.dest = data.src;
@@ -53,7 +53,7 @@ var Entry = /** @class */ (function () {
         return new this.constructor(__assign({}, this, data));
     };
     Entry.prototype.withContent = function (content) {
-        return this.with({ content: util_1.isFunction(content) ? content(this) : content });
+        return this.with({ content: util_1.isFunction(content) ? content(this.loadContent()) : content });
     };
     Entry.prototype.inDest = function (dest) {
         if (dest) {

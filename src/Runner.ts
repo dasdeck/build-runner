@@ -94,7 +94,7 @@ function resolvePath(src: string, input: Input, task?: Task): PromisedEntries {
             if (res) {
                 const dest = input.dest || task.dest;
                 return Promise.resolve(res).then(res => Promise.all(res)).then(res => res.map((data: any) => createEntry(data).inDest(dest))).catch(err => {
-                    throw `Error in task ${task.fullName}.input : ${err} \n ${err.stack}`;
+                    throw new Error(`Error in task ${task.fullName}.input : ${err} \n ${err.stack}`);
                 });
             }
         }
@@ -163,8 +163,7 @@ function outputEntries(entries: EntrySet, task: Task, runner: Runner): PromisedE
         }
 
     }).catch(err => {
-
-        throw `Error in task ${task.fullName}.output : ${err} \n ${err.stack}`;
+        throw new Error(`Error in task ${task.fullName}.output : ${err} \n ${err.stack}`);
 
     })
 
@@ -187,7 +186,7 @@ function filterEntries(entries: PromisedEntries, input:InputLike, task: Task, ru
             }
 
         })).then(res => res.filter(v => v))).catch(err => {
-            throw `Error in task ${task.fullName}.filter : ${err} \n ${err.stack}`
+            throw new Error(`Error in task ${task.fullName}.filter : ${err} \n ${err.stack}`);
         });
 
     } else {
@@ -201,7 +200,7 @@ function evaluateEntries(entries: EntrySet, task:Task, runner:Runner):PromisedEn
     return Promise.all(entries).then(entries => outputEntries(entries, task, runner)).then((entries: EntrySet) => {
 
         if(entries.find(entry => entry instanceof Promise)) {
-            throw 'entry should be resolved before logging';
+            throw new Error('entry should be resolved before logging');
         }
 
         task.entries = entries;

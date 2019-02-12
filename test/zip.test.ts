@@ -1,6 +1,5 @@
 import {run, Runner, Zip, Entry} from '../src';
 import * as path from 'path';
-import { fips } from 'crypto';
 
 describe('zip', () => {
 
@@ -25,7 +24,7 @@ describe('zip', () => {
     });
 
 
-    it('alter-zip', done => {
+    it('alter-zip', () => {
 
         const zip = new Zip({src: path.join(__dirname, 'assets', 'test.txt.zip')});
 
@@ -35,11 +34,10 @@ describe('zip', () => {
 
         expect(zip.entries.length).toBe(2);
 
-        done();
 
     })
 
-    it('alter-content-in-zip', done => {
+    it('alter-content-in-zip', () => {
 
         const zip = new Zip({src: path.join(__dirname, 'assets', 'test.txt.zip')});
 
@@ -49,10 +47,58 @@ describe('zip', () => {
 
         expect(reopenedZip.entries[0].loadContent()).toBe('tested');
 
-        done();
 
     });
 
+    it('replace-entries', () => {
+
+        const zip = new Zip({src: path.join(__dirname, 'assets', 'test.txt.zip')});
+
+        zip.entries = zip.entries.map(entry => entry.withContent('tested'));
+
+        const reopenedZip = new Zip({content: zip.toBuffer()});
+
+        expect(reopenedZip.entries[0].loadContent()).toBe('tested');
+    }),
+
+    it('glob-entries', () => {
+
+        const zip = new Zip({src: path.join(__dirname, 'assets', 'test.txt.zip')});
+        zip.entries = zip.glob('*.txt.zip');
+        expect(zip.entries.length).toBe(1);
+
+    });
+
+    it('with-mapping', () => {
+
+        const map = [
+            {
+                base: 'test/orig/dir',
+                src: '*',
+                dest: 'dest'
+            }
+        ];
+        const zip = new Zip;
+        zip.setEntry(new Entry({
+            content: 'test',
+            dest: 'test/orig/dir/myFile.txt'
+        }));
+
+        expect(zip.withMapping(map).entries[0].dest).toBe('dest/myFile.txt');
+
+    });
+
+    it('zips-get-extracted', done => {
+
+        run({
+
+        }).then((runner:Runner) => {
+
+            done();
+        });
+
+
+    });
 
 
 });

@@ -20,11 +20,16 @@ function map<T=any>(objOrArray: GenericObject | T[], cb: any): T[] {
 }
 
 const isString = (val:any): val is String  => typeof val === 'string';
-const isFunction =(val:any): val is Function => typeof val === 'function';
-
+const isFunction = (val:any): val is Function => typeof val === 'function';
+const isUndefined = (val:any): val is undefined => val === undefined;
+const isArray = (val:any): val is [] => val instanceof Array;
+const ensureArray = (val:any): any[] => isArray(val) ? val : [val];
 export {
+    ensureArray,
+    isArray,
     isFunction,
     isString,
+    isUndefined,
     map,
     resolver
 }

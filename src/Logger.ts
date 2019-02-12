@@ -12,6 +12,10 @@ export default class Logger {
             if (i < (config.level || 0)) {
                 (this as any)[name] = (console as any)[name];
             }
-        })
+        });
+
+        if (config.level as number >= 10) {
+            Error.stackTraceLimit = Infinity;
+        }
     }
 }

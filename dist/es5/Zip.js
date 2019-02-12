@@ -17,13 +17,15 @@ var Entry_1 = require("./Entry");
 var AdmZip = require("adm-zip");
 var path = require("path");
 var fs = require("fs");
+var util_1 = require("./util");
+var micromatch = require("micromatch");
 var AdmWrapperEntry = /** @class */ (function (_super) {
     __extends(AdmWrapperEntry, _super);
     function AdmWrapperEntry(data, entry) {
         var _this = _super.call(this, data) || this;
         _this._entry = entry || data._entry;
         if (!_this._entry) {
-            throw 'Wrapper entries need an AdmZip entry';
+            throw new Error('Wrapper entries need an AdmZip entry');
         }
         _this._entry.wrapper = _this;
         return _this;
@@ -68,7 +70,7 @@ var AdmWrapperEntry = /** @class */ (function (_super) {
 var Zip = /** @class */ (function (_super) {
     __extends(Zip, _super);
     function Zip(data) {
-        var _this = _super.call(this, data || { dest: 'zip' }) || this;
+        var _this = _super.call(this, data || { content: '', dest: 'zip' }) || this;
         _this._entries = {};
         if (_this.content instanceof Array) {
             _this.setEntries(_this.content);
@@ -96,10 +98,10 @@ var Zip = /** @class */ (function (_super) {
     Zip.prototype.setEntry = function (entry, replace) {
         if (replace === void 0) { replace = true; }
         if (!entry.dest) {
-            throw 'entries need a target!';
+            throw new Error('entries need a target!');
         }
         if (!replace && this._entries[entry.dest]) {
-            throw "entry already assigned";
+            throw new Error("entry already assigned");
         }
         this._entries[entry.dest] = entry;
     };
@@ -111,11 +113,32 @@ var Zip = /** @class */ (function (_super) {
                 return map;
             }, {});
             var map = Object.assign({}, base, this._entries);
-            return Object.keys(map).map(function (name) { return map[name]; });
+            var res = Object.keys(map).map(function (name) { return map[name]; });
+            return res;
+        },
+        set: function (entries) {
+            this.setEntries(entries);
         },
         enumerable: true,
         configurable: true
     });
+    Zip.prototype.withMapping = function (map) {
+        var _this = this;
+        var content = map.reduce(function (entries, input) {
+            var src = util_1.ensureArray(input.src);
+            var base = input.base || '';
+            var dest = input.dest || '';
+            return src.reduce(function (entries, src) {
+                var matchingEntries = _this.glob(path.join(base, src || ''))
+                    .map(function (entry) { return entry.with({ dest: path.join(dest, entry.dest.substr(base.length)) }); });
+                return entries.concat(matchingEntries);
+            }, entries);
+        }, []);
+        return new Zip({ content: content });
+    };
+    Zip.prototype.glob = function (pattern) {
+        return this.entries.filter(function (entry) { return micromatch([entry.dest], pattern); });
+    };
     Zip.prototype.setEntries = function (entries) {
         var _this = this;
         entries.forEach(function (entry) { return _this.setEntry(entry); });

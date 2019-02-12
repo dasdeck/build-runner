@@ -31,7 +31,7 @@ function runCli(args, config) {
             return index_1.run(config, a);
         }
         else {
-            throw 'no config found';
+            throw new Error('no config found');
         }
     });
 }

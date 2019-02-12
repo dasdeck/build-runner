@@ -1,8 +1,10 @@
-import {EntrySet, EntryLike, GenericObject, Content} from './interface';
+import {EntrySet, EntryLike, GenericObject, Content, InputLike, Input} from './interface';
 import Entry from './Entry';
 import * as AdmZip from 'adm-zip';
 import * as path from 'path';
 import * as fs from 'fs';
+import { ensureArray } from './util';
+import * as micromatch from 'micromatch';
 
 declare abstract class AdmZipEntry {
     entryName: string
@@ -10,6 +12,7 @@ declare abstract class AdmZipEntry {
     wrapper: AdmWrapperEntry
 }
 
+// type AdvancedEntrySet = EntrySet & {glob: Function};
 type EntryMap = GenericObject<Entry>;
 
 class AdmWrapperEntry extends Entry {
@@ -23,7 +26,7 @@ class AdmWrapperEntry extends Entry {
         this._entry = entry || (data as AdmWrapperEntry)._entry;
 
         if (!this._entry) {
-            throw 'Wrapper entries need an AdmZip entry';
+            throw new Error('Wrapper entries need an AdmZip entry');
         }
 
         this._entry.wrapper = this;
@@ -68,7 +71,7 @@ export default class Zip extends Entry {
     _entries: EntryMap = {}
 
     constructor(data?: EntryLike) {
-        super(data || {dest: 'zip'});
+        super(data || {content: '', dest: 'zip'});
 
         if (this.content instanceof Array) {
             this.setEntries(this.content);
@@ -92,12 +95,13 @@ export default class Zip extends Entry {
 
     setEntry(entry: Entry, replace = true) {
         if (!entry.dest) {
-            throw 'entries need a target!';
+            throw new Error('entries need a target!');
         }
 
         if (!replace && this._entries[entry.dest]) {
-            throw "entry already assigned";
+            throw new Error("entry already assigned");
         }
+
         this._entries[entry.dest] = entry;
     }
 
@@ -112,8 +116,34 @@ export default class Zip extends Entry {
         }, {});
 
         const map = Object.assign({}, base, this._entries);
-        return Object.keys(map).map(name => map[name]);
+        const res = Object.keys(map).map(name => map[name]);
+        return res;
 
+    }
+
+    withMapping(map: Input[]):Zip {
+
+        const content = map.reduce((entries: EntrySet, input:Input) => {
+            const src = ensureArray(input.src);
+            const base = input.base || '';
+            const dest = input.dest || '';
+            return src.reduce((entries, src) => {
+                const matchingEntries = this.glob(path.join(base, src || ''))
+                    .map((entry:Entry) => entry.with({dest: path.join(dest, entry.dest.substr(base.length))}));
+                return entries.concat(matchingEntries);
+            }, entries);
+
+        }, []);
+
+        return new Zip({content});
+    }
+
+    glob(pattern: string) {
+        return this.entries.filter((entry:Entry) => micromatch([entry.dest], pattern));
+    }
+
+    set entries(entries: EntrySet) {
+        this.setEntries(entries);
     }
 
     setEntries(entries: EntrySet) {
