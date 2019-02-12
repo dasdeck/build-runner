@@ -49,7 +49,7 @@ var Entry = /** @class */ (function () {
     };
     Entry.prototype.match = function (pattern, callback) {
         var res = extglob_1.capture(pattern, this.src || this.dest);
-        if (res.length) {
+        if (res && res.length) {
             if (util_1.isFunction(callback)) {
                 return callback(res[0]);
             }

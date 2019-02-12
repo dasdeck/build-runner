@@ -17,7 +17,6 @@ var Entry_1 = require("./Entry");
 var AdmZip = require("adm-zip");
 var path = require("path");
 var fs = require("fs");
-var util_1 = require("./util");
 var micromatch = require("micromatch");
 var ZipEntry = /** @class */ (function (_super) {
     __extends(ZipEntry, _super);
@@ -148,20 +147,19 @@ var Zip = /** @class */ (function (_super) {
         }, []);
         return new Zip({ content: content });
     };
-    Zip.prototype.withInputMapping = function (map) {
-        var _this = this;
-        var content = map.reduce(function (entries, input) {
-            var src = util_1.ensureArray(input.src);
-            var base = input.base || '';
-            var dest = input.dest || '';
-            return src.reduce(function (entries, src) {
-                var matchingEntries = _this.glob(path.join(base, src || ''))
-                    .map(function (entry) { return entry.with({ dest: path.join(dest, entry.dest.substr(base.length)) }); });
-                return entries.concat(matchingEntries);
-            }, entries);
-        }, []);
-        return new Zip({ content: content });
-    };
+    // withInputMapping(map: Input[]):Zip {
+    //     const content = map.reduce((entries: EntrySet, input:Input) => {
+    //         const src = ensureArray(input.src);
+    //         const base = input.base || '';
+    //         const dest = input.dest || '';
+    //         return src.reduce((entries, src) => {
+    //             const matchingEntries = this.glob(path.join(base, src || ''))
+    //                 .map((entry:Entry) => entry.with({dest: path.join(dest, entry.dest.substr(base.length))}));
+    //             return entries.concat(matchingEntries);
+    //         }, entries);
+    //     }, []);
+    //     return new Zip({content});
+    // }
     Zip.prototype.glob = function (pattern) {
         return this.entries.filter(function (entry) { return micromatch([entry.dest], pattern); });
     };

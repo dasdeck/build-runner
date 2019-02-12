@@ -51,7 +51,7 @@ export default class Entry implements EntryLike {
     match(pattern: string, callback?: Function): any {
 
         const res = capture(pattern, this.src || this.dest);
-        if (res.length) {
+        if (res && res.length) {
 
             if (isFunction(callback)) {
                 return callback(res[0])

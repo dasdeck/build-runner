@@ -39,7 +39,7 @@ interface Input {
     src?:OneOrMore<string>,
     ignore?:OneOrMore<string>,
     content?:string|Buffer,
-    dest?:string,
+    dest?:string|GenericObject<string>,
     base?:string,
     filter?:Filter
 }

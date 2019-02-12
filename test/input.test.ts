@@ -10,9 +10,31 @@ describe('input', () => {
         }
 
         Runner.run(config).then(runner => {
-            debugger
             expect(runner.entries._root[0].loadContent(null)).toBeInstanceOf(Buffer);
             done();
+        });
+
+    });
+
+    it('dest-map', done => {
+
+        const base = path.join(__dirname, 'content');
+        Runner.run({
+            base,
+            input: {
+                src: '*.txt',
+                dest: {
+                    '(test.*)': 'dest',
+                    '(test1.*)': 'dest1',
+
+                }
+            }
+        }).then(runner => {
+
+            expect(runner.entries._root[0].dest).toBe('dest1/test1.txt')
+            expect(runner.entries._root[1].dest).toBe('test2.txt')
+            done();
+
         });
 
     });

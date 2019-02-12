@@ -8,6 +8,7 @@ import {GenericObject, TaskFactory, TaskLike, EntrySet, PromisedEntries, Promise
 import Cache from './Cache';
 import Logger from './Logger';
 import {Zip} from '.';
+import { isString } from 'util';
 
 interface CacheConfig {
     dir?: string
@@ -86,6 +87,29 @@ function createEntries(data: EntryLike): EntrySet {
     } else {
         return [new Entry(data)];
     }
+}
+
+function mapToDestination(entries: EntrySet, base?:string,  dest?: string|GenericObject) {
+
+    if (!dest) {
+        return entries;
+    }
+
+    base = base || '';
+
+    if (isString(dest)) {
+        return entries.map(entry => entry.inDest(dest));
+    } else {
+        const srcs = Object.keys(dest);
+        return entries.map(entry => {
+            return srcs.reduce((result: any, src: string) => {
+                return result || entry.match(path.join(base as string, src), (match:string) => {
+                    return entry.withDest(path.join(dest[src], match));
+                });
+            }, null) || entry;
+        });
+
+    }
 
 }
 
@@ -99,10 +123,13 @@ function resolvePath(src: string, input: Input, task?: Task): PromisedEntries {
 
             if (res) {
                 const dest = input.dest || task.dest;
+                const base = input.base || task.base;
                 return Promise.resolve(res)
                 .then(res => Promise.all(res))
-                .then(res => res.reduce((entries:EntrySet, data: any) => entries.concat(createEntries(data).map((entry:Entry) => entry.inDest(dest))),[]))
-                .catch(err => {
+                .then(res => res.reduce((entries:EntrySet, data: any) => {
+                    return entries.concat(mapToDestination(createEntries(data), base, dest));
+                }, []))
+                .catch((err: Error) => {
                     throw new Error(`Error in task ${task.fullName}.input : ${err} \n ${err.stack}`);
                 });
             }

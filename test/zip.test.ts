@@ -66,24 +66,24 @@ describe('zip', () => {
 
     });
 
-    it('with-mapping', () => {
+    // it('with-mapping', () => {
 
-        const map = [
-            {
-                base: 'test/orig/dir',
-                src: '*',
-                dest: 'dest'
-            }
-        ];
-        const zip = new Zip;
-        zip.setEntry(new Entry({
-            content: 'test',
-            dest: 'test/orig/dir/myFile.txt'
-        }));
+    //     const map = [
+    //         {
+    //             base: 'test/orig/dir',
+    //             src: '*',
+    //             dest: 'dest'
+    //         }
+    //     ];
+    //     const zip = new Zip;
+    //     zip.setEntry(new Entry({
+    //         content: 'test',
+    //         dest: 'test/orig/dir/myFile.txt'
+    //     }));
 
-        expect(zip.withInputMapping(map).entries[0].dest).toBe('dest/myFile.txt');
+    //     expect(zip.withInputMapping(map).entries[0].dest).toBe('dest/myFile.txt');
 
-    });
+    // });
 
     // it('zip-caching', done => {
 

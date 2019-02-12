@@ -9,6 +9,7 @@ var Task_1 = require("./Task");
 var Cache_1 = require("./Cache");
 var Logger_1 = require("./Logger");
 var _1 = require(".");
+var util_2 = require("util");
 var Runner = /** @class */ (function () {
     function Runner(config) {
         if (config === void 0) { config = { home: process.cwd() }; }
@@ -66,6 +67,25 @@ function createEntries(data) {
         return [new Entry_1.default(data)];
     }
 }
+function mapToDestination(entries, base, dest) {
+    if (!dest) {
+        return entries;
+    }
+    base = base || '';
+    if (util_2.isString(dest)) {
+        return entries.map(function (entry) { return entry.inDest(dest); });
+    }
+    else {
+        var srcs_1 = Object.keys(dest);
+        return entries.map(function (entry) {
+            return srcs_1.reduce(function (result, src) {
+                return result || entry.match(path.join(base, src), function (match) {
+                    return entry.withDest(path.join(dest[src], match));
+                });
+            }, null) || entry;
+        });
+    }
+}
 function resolvePath(src, input, task) {
     if (task) {
         var _loop_1 = function (i) {
@@ -73,9 +93,12 @@ function resolvePath(src, input, task) {
             var res = resolver_1(src, input, task);
             if (res) {
                 var dest_1 = input.dest || task.dest;
+                var base_1 = input.base || task.base;
                 return { value: Promise.resolve(res)
                         .then(function (res) { return Promise.all(res); })
-                        .then(function (res) { return res.reduce(function (entries, data) { return entries.concat(createEntries(data).map(function (entry) { return entry.inDest(dest_1); })); }, []); })
+                        .then(function (res) { return res.reduce(function (entries, data) {
+                        return entries.concat(mapToDestination(createEntries(data), base_1, dest_1));
+                    }, []); })
                         .catch(function (err) {
                         throw new Error("Error in task " + task.fullName + ".input : " + err + " \n " + err.stack);
                     }) };

@@ -151,22 +151,22 @@ export default class Zip extends Entry {
         return new Zip({content});
     }
 
-    withInputMapping(map: Input[]):Zip {
+    // withInputMapping(map: Input[]):Zip {
 
-        const content = map.reduce((entries: EntrySet, input:Input) => {
-            const src = ensureArray(input.src);
-            const base = input.base || '';
-            const dest = input.dest || '';
-            return src.reduce((entries, src) => {
-                const matchingEntries = this.glob(path.join(base, src || ''))
-                    .map((entry:Entry) => entry.with({dest: path.join(dest, entry.dest.substr(base.length))}));
-                return entries.concat(matchingEntries);
-            }, entries);
+    //     const content = map.reduce((entries: EntrySet, input:Input) => {
+    //         const src = ensureArray(input.src);
+    //         const base = input.base || '';
+    //         const dest = input.dest || '';
+    //         return src.reduce((entries, src) => {
+    //             const matchingEntries = this.glob(path.join(base, src || ''))
+    //                 .map((entry:Entry) => entry.with({dest: path.join(dest, entry.dest.substr(base.length))}));
+    //             return entries.concat(matchingEntries);
+    //         }, entries);
 
-        }, []);
+    //     }, []);
 
-        return new Zip({content});
-    }
+    //     return new Zip({content});
+    // }
 
     glob(pattern: string) {
         return this.entries.filter((entry:Entry) => micromatch([entry.dest], pattern));
