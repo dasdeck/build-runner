@@ -10,7 +10,8 @@ describe('input', () => {
         }
 
         Runner.run(config).then(runner => {
-            expect(runner.entries._root[0].content).toBeInstanceOf(Buffer);
+            debugger
+            expect(runner.entries._root[0].loadContent(null)).toBeInstanceOf(Buffer);
             done();
         });
 

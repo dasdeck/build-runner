@@ -1,5 +1,6 @@
 import {run, Runner, Zip, Entry} from '../src';
 import * as path from 'path';
+import { ZipEntry } from '../src/Zip';
 
 describe('zip', () => {
 
@@ -18,7 +19,7 @@ describe('zip', () => {
 
         run(tasks).then((runner: Runner) => {
 
-            expect(runner.entries.zip[0]).toBeInstanceOf(Zip);
+            expect(runner.entries.zip[0]).toBeInstanceOf(ZipEntry);
             done();
         })
     });
@@ -84,16 +85,35 @@ describe('zip', () => {
             dest: 'test/orig/dir/myFile.txt'
         }));
 
-        expect(zip.withMapping(map).entries[0].dest).toBe('dest/myFile.txt');
+        expect(zip.withInputMapping(map).entries[0].dest).toBe('dest/myFile.txt');
+
+    });
+
+    it('with-match-mapping', () => {
+
+        const map = {
+
+            'test/orig/dir/(*)': 'dest'
+        }
+        const zip = new Zip;
+        zip.setEntry(new Entry({
+            content: 'test',
+            dest: 'test/orig/dir/myFile.txt'
+        }));
+
+        expect(zip.withMatchMapping(map).entries[0].dest).toBe('dest/myFile.txt');
 
     });
 
     it('zips-get-extracted', done => {
 
         run({
-
+            name: 'task1',
+            base: path.join(__dirname, 'assets'),
+            input: '2items.zip'
         }).then((runner:Runner) => {
 
+            expect(runner.entries.task1.length).toBe(2);
             done();
         });
 

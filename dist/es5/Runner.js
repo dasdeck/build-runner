@@ -29,7 +29,6 @@ var Runner = /** @class */ (function () {
         this.tasks[task.name] = task;
     };
     Runner.prototype.loadConfig = function (p) {
-        // return require(p);
         if (p[0] === '~') {
             p = p.replace('~', this.config.home || process.cwd());
         }
@@ -48,10 +47,9 @@ exports.Runner = Runner;
 exports.default = Runner;
 var pathResolvers = [
     function (src, input, task) {
-        if (src.indexOf('http') === 0) {
-            return [task.runner.cache.persistResult(src, function () { return request(src, { encoding: null }).then(function (content) {
-                    return { content: content, src: src };
-                }); })];
+        if (src.startsWith('http')) {
+            return task.runner.cache.persistSource(src, function () { return request(src, { encoding: null }); })
+                .then(function (files) { return files.map(function (src) { return ({ src: src }); }); });
         }
     },
     function (src, input, task) {
@@ -60,12 +58,12 @@ var pathResolvers = [
         return glob.sync(src, { ignore: ignore, nodir: true, cwd: base }).map(function (dest) { return ({ dest: dest, src: path.join(base, dest) }); });
     }
 ];
-function createEntry(data) {
+function createEntries(data) {
     if (data.src && data.src.endsWith('.zip')) {
-        return new _1.Zip(data);
+        return new _1.Zip(data).entries;
     }
     else {
-        return new Entry_1.default(data);
+        return [new Entry_1.default(data)];
     }
 }
 function resolvePath(src, input, task) {
@@ -75,7 +73,10 @@ function resolvePath(src, input, task) {
             var res = resolver_1(src, input, task);
             if (res) {
                 var dest_1 = input.dest || task.dest;
-                return { value: Promise.resolve(res).then(function (res) { return Promise.all(res); }).then(function (res) { return res.map(function (data) { return createEntry(data).inDest(dest_1); }); }).catch(function (err) {
+                return { value: Promise.resolve(res)
+                        .then(function (res) { return Promise.all(res); })
+                        .then(function (res) { return res.reduce(function (entries, data) { return entries.concat(createEntries(data).map(function (entry) { return entry.inDest(dest_1); })); }, []); })
+                        .catch(function (err) {
                         throw new Error("Error in task " + task.fullName + ".input : " + err + " \n " + err.stack);
                     }) };
             }
@@ -101,7 +102,6 @@ function getEntries(input, task) {
     }
 }
 function filterInput(input, task, runner) {
-    if (runner === void 0) { runner = new Runner(task); }
     var entries = getEntries(input, task);
     return filterEntries(entries, input, task, runner);
 }

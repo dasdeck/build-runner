@@ -13,7 +13,9 @@ var __assign = (this && this.__assign) || function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var path = require("path");
 var fs = require("fs");
+var extglob_1 = require("extglob");
 var util_1 = require("./util");
+;
 var Entry = /** @class */ (function () {
     function Entry(data) {
         this.dest = '';
@@ -45,6 +47,27 @@ var Entry = /** @class */ (function () {
             content: this.content
         };
     };
+    Entry.prototype.match = function (pattern, callback) {
+        var res = extglob_1.capture(pattern, this.src || this.dest);
+        if (res.length) {
+            if (util_1.isFunction(callback)) {
+                return callback(res[0]);
+            }
+            return res[0];
+        }
+        return false;
+    };
+    Entry.prototype.withDest = function (dest) {
+        var args = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            args[_i - 1] = arguments[_i];
+        }
+        if (util_1.isFunction(dest)) {
+            dest = dest(this.dest);
+        }
+        dest = path.join.apply(path, [dest].concat(args));
+        return this.with({ dest: dest });
+    };
     Entry.prototype.with = function (data) {
         if (data === void 0) { data = {}; }
         if (util_1.isFunction(data)) {
@@ -57,7 +80,7 @@ var Entry = /** @class */ (function () {
     };
     Entry.prototype.inDest = function (dest) {
         if (dest) {
-            return this.with({ dest: path.join(dest, this.dest || '') });
+            return this.withDest(dest, this.dest);
         }
         else {
             return this;

@@ -1,9 +1,11 @@
 import * as path from 'path';
 import * as fs from 'fs';
+import {capture} from 'extglob';
 
 import {Content, EntryLike, GenericObject, Class} from './interface';
 import {isFunction, isUndefined} from './util';
 
+interface StringFilter {(input:string): string};
 
 export default class Entry implements EntryLike {
 
@@ -46,6 +48,28 @@ export default class Entry implements EntryLike {
         }
     }
 
+    match(pattern: string, callback?: Function): any {
+
+        const res = capture(pattern, this.src || this.dest);
+        if (res.length) {
+
+            if (isFunction(callback)) {
+                return callback(res[0])
+            }
+            return res[0];
+        }
+        return false;
+    }
+
+    withDest(dest:string | StringFilter, ...args: string[]) {
+        if (isFunction(dest)) {
+            dest = dest(this.dest);
+        }
+        dest = path.join(dest, ...args);
+        return this.with({dest: dest})
+    }
+
+
 
     with(data: Function | GenericObject = {}):Entry {
 
@@ -63,12 +87,11 @@ export default class Entry implements EntryLike {
 
     inDest(dest?: string): Entry {
         if (dest) {
-            return this.with({dest: path.join(dest, this.dest || '')});
+            return this.withDest(dest, this.dest);
         } else {
             return this;
         }
     }
-
 
 
     loadContent(encoding: string | null = 'utf8', override: boolean = false): Content | void {

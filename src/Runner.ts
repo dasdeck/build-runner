@@ -1,26 +1,33 @@
 import * as glob from 'glob';
 import * as path from 'path';
 import * as request from 'request-promise-native';
-import {resolver, map} from './util';
+import {resolver, map, md5, walkDirSync} from './util';
 import Entry from './Entry';
 import Task from './Task';
-import {GenericObject, TaskFactory, TaskLike, EntrySet, PromisedEntries, PromisedEntryResult, Input, InputLike, EntryResult, TaskInterface, Class, EntryLike} from './interface';
+import {GenericObject, TaskFactory, TaskLike, EntrySet, PromisedEntries, PromisedEntryResult, Input, InputLike, EntryResult, TaskInterface, EntryLike, LoggerConfig} from './interface';
 import Cache from './Cache';
 import Logger from './Logger';
-import { isString } from 'util';
-import { ok } from 'assert';
-import { Zip } from '.';
+import {Zip} from '.';
 
+interface CacheConfig {
+    dir?: string
+}
+interface RunnerConfig {
+    cache?: CacheConfig
+    home?: string
+    log?: LoggerConfig
+    seperator?: string
+}
 export default class Runner {
 
     entries: { [s: string]: EntrySet; } = {}
     tasks: { [s: string]: Task; } = {}
     taskTree: { [s: string]: Task; } = {}
-    _config: GenericObject = {}
+    _config: RunnerConfig = {}
     logger: Logger
     cache: Cache = new Cache
 
-    constructor(config: GenericObject = {home: process.cwd()}) {
+    constructor(config: RunnerConfig = {home: process.cwd()}) {
         this._config = config;
         this.logger = new Logger(config.log)
     }
@@ -37,14 +44,13 @@ export default class Runner {
     }
 
     loadConfig(p: string):TaskInterface|TaskFactory {
-        // return require(p);
+
         if (p[0] === '~') {
             p = p.replace('~', this.config.home || process.cwd())
         }
         return require(p);
 
     }
-
 
     get config() {
         return this._config;
@@ -55,12 +61,15 @@ export default class Runner {
 
 const pathResolvers = [
 
-    (src: string, input: Input, task: Task): PromisedEntryResult[]|void => {
-        if (src.indexOf('http') === 0) {
-            return [task.runner.cache.persistResult(src, () => request(src, {encoding: null}).then((content:string|Buffer) => {
-                return {content, src};
-            }))]
+
+    (src: string, input: Input, task: Task): Promise<EntryResult[]> | void => {
+
+        if (src.startsWith('http')) {
+
+            return task.runner.cache.persistSource(src, () => request(src, {encoding: null}))
+                .then(files => files.map((src:string) => ({src})));
         }
+
     },
 
     (src: string, input: Input, task: Task): EntryResult[] => {
@@ -68,18 +77,16 @@ const pathResolvers = [
         const ignore = input.ignore instanceof Array ? input.ignore : (input.ignore && [input.ignore]);
         return glob.sync(src, {ignore, nodir: true, cwd: base}).map(dest => ({dest, src: path.join(base, dest)}));
     }
+
 ]
 
-function createEntry(data: EntryLike): Entry {
-
+function createEntries(data: EntryLike): EntrySet {
 
     if (data.src && data.src.endsWith('.zip')) {
-        return new Zip(data);
+        return new Zip(data).entries;
     } else {
-        return new Entry(data);
+        return [new Entry(data)];
     }
-
-
 
 }
 
@@ -93,11 +100,15 @@ function resolvePath(src: string, input: Input, task?: Task): PromisedEntries {
 
             if (res) {
                 const dest = input.dest || task.dest;
-                return Promise.resolve(res).then(res => Promise.all(res)).then(res => res.map((data: any) => createEntry(data).inDest(dest))).catch(err => {
+                return Promise.resolve(res)
+                .then(res => Promise.all(res))
+                .then(res => res.reduce((entries:EntrySet, data: any) => entries.concat(createEntries(data).map((entry:Entry) => entry.inDest(dest))),[]))
+                .catch(err => {
                     throw new Error(`Error in task ${task.fullName}.input : ${err} \n ${err.stack}`);
                 });
             }
         }
+
     }
 
     return Promise.resolve([]);
@@ -112,7 +123,7 @@ function getEntries(input: InputLike, task?: Task): PromisedEntries {
 
     } else if (input instanceof Array) {
 
-            return Promise.all(input.map((input: InputLike) => getEntries(input, task))).then(sets => sets.reduce((res, set) => res.concat(set)));
+        return Promise.all(input.map((input: InputLike) => getEntries(input, task))).then(sets => sets.reduce((res, set) => res.concat(set)));
 
     } else {
 
@@ -123,17 +134,21 @@ function getEntries(input: InputLike, task?: Task): PromisedEntries {
 
 }
 
-function filterInput(input: InputLike, task: Task, runner: Runner = new Runner(task)):PromisedEntries {
+function filterInput(input: InputLike, task: Task, runner: Runner):PromisedEntries {
+
     const entries = getEntries(input, task);
     return filterEntries(entries, input, task, runner);
+
 }
 
 function resolveTasks(parent: Task, runner: Runner, config: GenericObject): PromisedEntries {
+
     if (parent.tasks) {
         return resolver(<any>map(parent.tasks, (task: TaskLike, name:string|number) => () => evaluateTask(task, runner, parent, config, name)), parent.parallel)
     } else {
         return Promise.resolve([]);
     }
+
 }
 
 function logEntries(entries: EntrySet, runner: Runner, name?: string): void {
@@ -164,8 +179,7 @@ function outputEntries(entries: EntrySet, task: Task, runner: Runner): PromisedE
 
     }).catch(err => {
         throw new Error(`Error in task ${task.fullName}.output : ${err} \n ${err.stack}`);
-
-    })
+    });
 
 }
 
@@ -267,17 +281,16 @@ function evaluateTask(taskl: TaskLike | TaskFactory, runner: Runner, parent?: Ta
 
     }
 
-
 }
 
 function run(task:TaskLike | TaskFactory, config:GenericObject = {}, runner: Runner = new Runner(config)):Promise<Runner> {
 
     return evaluateTask(task, runner, undefined, config).then(() => runner);
+
 }
 
-
-
 export {
+
     run,
     Runner
 

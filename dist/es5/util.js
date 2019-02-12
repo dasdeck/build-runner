@@ -1,5 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+var crypto = require("crypto");
+var fs = require("fs");
 function resolver(promises, parallel) {
     if (parallel) {
         var unwrapped = promises.map(function (f) { return f(); });
@@ -29,3 +31,16 @@ var isArray = function (val) { return val instanceof Array; };
 exports.isArray = isArray;
 var ensureArray = function (val) { return isArray(val) ? val : [val]; };
 exports.ensureArray = ensureArray;
+function md5(data) {
+    return crypto.createHash('md5').update(data).digest("hex");
+}
+exports.md5 = md5;
+var walkDirSync = function (dir) {
+    if (fs.statSync(dir).isDirectory()) {
+        return fs.readdirSync(dir).reduce(function (res, file) { return res.concat(walkDirSync(file)); }, []);
+    }
+    else {
+        return [dir];
+    }
+};
+exports.walkDirSync = walkDirSync;

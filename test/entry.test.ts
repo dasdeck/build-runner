@@ -16,4 +16,22 @@ describe('entry', () => {
     });
 
 
+    it('with-dest', () => {
+
+        const e = new Entry({src:'test/path/test.txt', dest: 'test/path/test.txt', content: 'test'});
+
+        expect(e.withDest(dest => dest.substr(5)).dest).toBe('path/test.txt');
+
+    });
+
+    it('match', () => {
+
+        const e = new Entry({src:'test/path/test.txt', dest: 'tmp', content: 'test'});
+
+        expect(e.match('**/path/(*.txt)')).toBe('test.txt');
+        expect(e.match('**/path/(*.txt)', (match:string) => e.withDest('new', 'dest', match)).dest).toBe('new/dest/test.txt');
+
+    });
+
+
 });

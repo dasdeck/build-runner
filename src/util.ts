@@ -1,5 +1,6 @@
 import { GenericObject, LazyPromise } from "./interface";
-
+import * as crypto from 'crypto';
+import * as fs from 'fs';
 
 function resolver(promises: LazyPromise[], parallel?:boolean):Promise<any> {
 
@@ -24,7 +25,25 @@ const isFunction = (val:any): val is Function => typeof val === 'function';
 const isUndefined = (val:any): val is undefined => val === undefined;
 const isArray = (val:any): val is [] => val instanceof Array;
 const ensureArray = (val:any): any[] => isArray(val) ? val : [val];
+
+function md5(data: any) {
+    return crypto.createHash('md5').update(data).digest("hex");
+}
+
+const walkDirSync = (dir:string): string[] => {
+
+    if (fs.statSync(dir).isDirectory()) {
+        return fs.readdirSync(dir).reduce((res: string[], file:string) => res.concat(walkDirSync(file)), []);
+    } else {
+        return [dir];
+    }
+
+
+}
+
 export {
+    walkDirSync,
+    md5,
     ensureArray,
     isArray,
     isFunction,

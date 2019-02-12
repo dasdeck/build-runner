@@ -19,21 +19,22 @@ var path = require("path");
 var fs = require("fs");
 var util_1 = require("./util");
 var micromatch = require("micromatch");
-var AdmWrapperEntry = /** @class */ (function (_super) {
-    __extends(AdmWrapperEntry, _super);
-    function AdmWrapperEntry(data, entry) {
+var ZipEntry = /** @class */ (function (_super) {
+    __extends(ZipEntry, _super);
+    function ZipEntry(data, entry) {
         var _this = _super.call(this, data) || this;
         _this._entry = entry || data._entry;
+        _this._src = _this._entry.entryName;
         if (!_this._entry) {
-            throw new Error('Wrapper entries need an AdmZip entry');
+            throw new Error('Wrapper entries need an AdmZip entry' + JSON.stringify(_this));
         }
         _this._entry.wrapper = _this;
         return _this;
     }
-    AdmWrapperEntry.prototype.isConnected = function () {
+    ZipEntry.prototype.isConnected = function () {
         return this._entry.wrapper === this;
     };
-    Object.defineProperty(AdmWrapperEntry.prototype, "content", {
+    Object.defineProperty(ZipEntry.prototype, "content", {
         get: function () {
             if (this._content) {
                 return this._content;
@@ -49,11 +50,20 @@ var AdmWrapperEntry = /** @class */ (function (_super) {
         enumerable: true,
         configurable: true
     });
-    AdmWrapperEntry.prototype.loadContent = function (encoding) {
+    ZipEntry.prototype.loadContent = function (encoding) {
         if (encoding === void 0) { encoding = 'utf8'; }
         return this.content.toString(encoding);
     };
-    Object.defineProperty(AdmWrapperEntry.prototype, "dest", {
+    Object.defineProperty(ZipEntry.prototype, "src", {
+        get: function () {
+            return this._src;
+        },
+        set: function (val) {
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(ZipEntry.prototype, "dest", {
         get: function () {
             return this._entry.entryName;
         },
@@ -65,11 +75,13 @@ var AdmWrapperEntry = /** @class */ (function (_super) {
         enumerable: true,
         configurable: true
     });
-    return AdmWrapperEntry;
+    return ZipEntry;
 }(Entry_1.default));
+exports.ZipEntry = ZipEntry;
 var Zip = /** @class */ (function (_super) {
     __extends(Zip, _super);
-    function Zip(data) {
+    function Zip(data, options) {
+        if (options === void 0) { options = {}; }
         var _this = _super.call(this, data || { content: '', dest: 'zip' }) || this;
         _this._entries = {};
         if (_this.content instanceof Array) {
@@ -108,7 +120,7 @@ var Zip = /** @class */ (function (_super) {
     Object.defineProperty(Zip.prototype, "entries", {
         get: function () {
             var base = this.baseZip.getEntries().reduce(function (map, e) {
-                var entry = e.wrapper || new AdmWrapperEntry({ src: 'src' }, e);
+                var entry = e.wrapper || new ZipEntry({ src: 'src' }, e);
                 map[entry.dest] = entry;
                 return map;
             }, {});
@@ -122,7 +134,21 @@ var Zip = /** @class */ (function (_super) {
         enumerable: true,
         configurable: true
     });
-    Zip.prototype.withMapping = function (map) {
+    Zip.prototype.withMatchMapping = function (map) {
+        var _this = this;
+        var content = Object.keys(map).reduce(function (content, match) {
+            var dest = map[match];
+            return _this.entries.reduce(function (content, entry) {
+                var remapped = entry.match(match, function (match) { return entry.withDest(dest, match); });
+                if (remapped) {
+                    content.push(remapped);
+                }
+                return content;
+            }, content);
+        }, []);
+        return new Zip({ content: content });
+    };
+    Zip.prototype.withInputMapping = function (map) {
         var _this = this;
         var content = map.reduce(function (entries, input) {
             var src = util_1.ensureArray(input.src);

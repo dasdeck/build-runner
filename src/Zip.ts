@@ -9,27 +9,32 @@ import * as micromatch from 'micromatch';
 declare abstract class AdmZipEntry {
     entryName: string
     abstract getData():Buffer
-    wrapper: AdmWrapperEntry
+    wrapper: ZipEntry
 }
 
 // type AdvancedEntrySet = EntrySet & {glob: Function};
 type EntryMap = GenericObject<Entry>;
 
-class AdmWrapperEntry extends Entry {
+
+export class ZipEntry extends Entry {
 
     _entry: AdmZipEntry
     _data?: Buffer
     _content?: Content
+    _src: string
 
     constructor (data: EntryLike, entry: AdmZipEntry) {
         super(data);
-        this._entry = entry || (data as AdmWrapperEntry)._entry;
+        this._entry = entry || (data as ZipEntry)._entry;
+
+        this._src = this._entry.entryName;
 
         if (!this._entry) {
-            throw new Error('Wrapper entries need an AdmZip entry');
+            throw new Error('Wrapper entries need an AdmZip entry' + JSON.stringify(this));
         }
 
         this._entry.wrapper = this;
+
     }
 
     isConnected() {
@@ -54,6 +59,14 @@ class AdmWrapperEntry extends Entry {
         return this.content.toString(encoding);
     }
 
+    set src(val) {
+
+    }
+
+    get src(): string {
+        return this._src;
+    }
+
     get dest() {
         return this._entry.entryName;
     }
@@ -70,7 +83,7 @@ export default class Zip extends Entry {
     content?: AdmZip
     _entries: EntryMap = {}
 
-    constructor(data?: EntryLike) {
+    constructor(data?: EntryLike, options: GenericObject = {}) {
         super(data || {content: '', dest: 'zip'});
 
         if (this.content instanceof Array) {
@@ -109,7 +122,7 @@ export default class Zip extends Entry {
 
         const base = this.baseZip.getEntries().reduce((map: EntryMap, e: any) => {
 
-            const entry = e.wrapper || new AdmWrapperEntry({src: 'src'}, e as AdmZipEntry);
+            const entry = e.wrapper || new ZipEntry({src: 'src'}, e as AdmZipEntry);
             map[entry.dest] = entry;
             return map;
 
@@ -121,7 +134,24 @@ export default class Zip extends Entry {
 
     }
 
-    withMapping(map: Input[]):Zip {
+    withMatchMapping(map: GenericObject<string>):Zip {
+
+        const content = Object.keys(map).reduce((content: EntrySet, match: string) => {
+            const dest = map[match];
+            return this.entries.reduce((content: EntrySet, entry: Entry) => {
+                const remapped = entry.match(match, (match: string) => entry.withDest(dest, match));
+                if (remapped) {
+                    content.push(remapped);
+                }
+                return content;
+            }, content);
+
+        }, []);
+
+        return new Zip({content});
+    }
+
+    withInputMapping(map: Input[]):Zip {
 
         const content = map.reduce((entries: EntrySet, input:Input) => {
             const src = ensureArray(input.src);
