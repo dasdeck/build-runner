@@ -78,7 +78,7 @@ var Cache = /** @class */ (function () {
     Cache.prototype.load = function (src) {
         var p = this.getCachePathFor(src);
         if (fs.existsSync(p)) {
-            this.data[src] = util_1.walkDirSync(p);
+            this.data[src] = p;
             return this.get(src);
         }
     };

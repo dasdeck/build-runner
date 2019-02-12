@@ -21,7 +21,7 @@ export default class Cache {
         fs.removeSync(this.dir);
     }
 
-    persistSource(src: string, getter?: Function): Promise<string[]> {
+    persistSource(src: string, getter?: Function): Promise<string> {
         const cachedValue = this.get(src);
 
         if (typeof cachedValue === 'undefined') {
@@ -92,7 +92,7 @@ export default class Cache {
     load(src: string):string[]|void {
         const p = this.getCachePathFor(src);
         if (fs.existsSync(p)) {
-            this.data[src] = walkDirSync(p);
+            this.data[src] = p;
             return this.get(src);
         }
     }

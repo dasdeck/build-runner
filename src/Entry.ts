@@ -2,8 +2,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 import {capture} from 'extglob';
 
-import {Content, EntryLike, GenericObject, Class} from './interface';
+import {Content, EntryLike, GenericObject, Class, Input} from './interface';
 import {isFunction, isUndefined} from './util';
+import { isString } from 'util';
 
 interface StringFilter {(input:string): string};
 
@@ -15,9 +16,9 @@ export default class Entry implements EntryLike {
 
     constructor(data: EntryLike) {
 
-        if (data instanceof Entry) {
-            throw new Error('do not create entry from entry (yet)');
-        }
+        // if (data instanceof Entry) {
+        //     throw new Error('do not create entry from entry (yet)');
+        // }
 
         if (!data.src && isUndefined(data.content)) {
             throw new Error('who needs entries without source nor content?');
@@ -61,12 +62,33 @@ export default class Entry implements EntryLike {
         return false;
     }
 
-    withDest(dest:string | StringFilter, ...args: string[]) {
+    withDest(dest:string | StringFilter | Input, ...args: string[]) {
+
+
         if (isFunction(dest)) {
             dest = dest(this.dest);
         }
-        dest = path.join(dest, ...args);
-        return this.with({dest: dest})
+
+
+        if (isString(dest)) {
+
+            dest = path.join(dest, ...args);
+            return this.with({dest: dest})
+        }
+
+        if(dest.dest) {
+            const map = dest.dest as GenericObject<string>;
+            const base = dest.base || '';
+            const srcs = Object.keys(map);
+            return srcs.reduce((result: any, src: string) => {
+                return result || this.match(path.join(base as string, src), (match:string) => {
+                    return this.withDest(path.join(map[src], match));
+                });
+            }, null) || this;
+        }
+
+        return this;
+
     }
 
 

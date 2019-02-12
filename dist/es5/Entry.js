@@ -15,13 +15,14 @@ var path = require("path");
 var fs = require("fs");
 var extglob_1 = require("extglob");
 var util_1 = require("./util");
+var util_2 = require("util");
 ;
 var Entry = /** @class */ (function () {
     function Entry(data) {
+        // if (data instanceof Entry) {
+        //     throw new Error('do not create entry from entry (yet)');
+        // }
         this.dest = '';
-        if (data instanceof Entry) {
-            throw new Error('do not create entry from entry (yet)');
-        }
         if (!data.src && util_1.isUndefined(data.content)) {
             throw new Error('who needs entries without source nor content?');
         }
@@ -58,6 +59,7 @@ var Entry = /** @class */ (function () {
         return false;
     };
     Entry.prototype.withDest = function (dest) {
+        var _this = this;
         var args = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             args[_i - 1] = arguments[_i];
@@ -65,8 +67,21 @@ var Entry = /** @class */ (function () {
         if (util_1.isFunction(dest)) {
             dest = dest(this.dest);
         }
-        dest = path.join.apply(path, [dest].concat(args));
-        return this.with({ dest: dest });
+        if (util_2.isString(dest)) {
+            dest = path.join.apply(path, [dest].concat(args));
+            return this.with({ dest: dest });
+        }
+        if (dest.dest) {
+            var map_1 = dest.dest;
+            var base_1 = dest.base || '';
+            var srcs = Object.keys(map_1);
+            return srcs.reduce(function (result, src) {
+                return result || _this.match(path.join(base_1, src), function (match) {
+                    return _this.withDest(path.join(map_1[src], match));
+                });
+            }, null) || this;
+        }
+        return this;
     };
     Entry.prototype.with = function (data) {
         if (data === void 0) { data = {}; }

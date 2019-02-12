@@ -1,24 +1,22 @@
 import {run, Runner, Zip, Entry} from '../src';
 import * as path from 'path';
-import { ZipEntry } from '../src/Zip';
-import { debug } from 'util';
 
 describe('zip', () => {
 
-    it('auto-create-zip', done => {
+    // it('auto-create-zip', done => {
 
 
-        const tasks = {
-            name: 'zip',
-            input: path.join(__dirname, 'assets', '*.zip')
-        };
+    //     const tasks = {
+    //         name: 'zip',
+    //         input: path.join(__dirname, 'assets', '*.zip')
+    //     };
 
-        run(tasks).then((runner: Runner) => {
+    //     run(tasks).then((runner: Runner) => {
 
-            expect(runner.entries.zip[0]).toBeInstanceOf(ZipEntry);
-            done();
-        })
-    });
+    //         expect(runner.entries.zip[0]).toBeInstanceOf(Entry);
+    //         done();
+    //     })
+    // });
 
 
     it('alter-zip', () => {
@@ -121,20 +119,20 @@ describe('zip', () => {
 
     });
 
-    it('zips-get-extracted', done => {
+    // it('zips-get-extracted', done => {
 
-        run({
-            name: 'task1',
-            base: path.join(__dirname, 'assets'),
-            input: '2items.zip'
-        }).then((runner:Runner) => {
+    //     run({
+    //         name: 'task1',
+    //         base: path.join(__dirname, 'assets'),
+    //         input: '2items.zip'
+    //     }).then((runner:Runner) => {
 
-            expect(runner.entries.task1.length).toBe(2);
-            done();
-        });
+    //         expect(runner.entries.task1.length).toBe(2);
+    //         done();
+    //     });
 
 
-    });
+    // });
 
 
 });

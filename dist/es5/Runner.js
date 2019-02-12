@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var glob = require("glob");
+var glob_1 = require("glob");
 var path = require("path");
 var request = require("request-promise-native");
 var util_1 = require("./util");
@@ -8,7 +8,6 @@ var Entry_1 = require("./Entry");
 var Task_1 = require("./Task");
 var Cache_1 = require("./Cache");
 var Logger_1 = require("./Logger");
-var _1 = require(".");
 var util_2 = require("util");
 var Runner = /** @class */ (function () {
     function Runner(config) {
@@ -46,69 +45,38 @@ var Runner = /** @class */ (function () {
 }());
 exports.Runner = Runner;
 exports.default = Runner;
-var pathResolvers = [
-    function (src, input, task) {
-        if (src.startsWith('http')) {
-            return task.runner.cache.persistSource(src, function () { return request(src, { encoding: null }); })
-                .then(function (files) { return files.map(function (src) { return ({ src: src }); }); });
-        }
-    },
-    function (src, input, task) {
-        var base = input.base || task.base || '';
-        var ignore = input.ignore instanceof Array ? input.ignore : (input.ignore && [input.ignore]);
-        return glob.sync(src, { ignore: ignore, nodir: true, cwd: base }).map(function (dest) { return ({ dest: dest, src: path.join(base, dest) }); });
-    }
-];
-function createEntries(data) {
-    if (data.src && data.src.endsWith('.zip')) {
-        return new _1.Zip(data).entries;
-    }
-    else {
-        return [new Entry_1.default(data)];
-    }
-}
-function mapToDestination(entries, base, dest) {
-    if (!dest) {
-        return entries;
-    }
-    base = base || '';
-    if (util_2.isString(dest)) {
-        return entries.map(function (entry) { return entry.inDest(dest); });
-    }
-    else {
-        var srcs_1 = Object.keys(dest);
-        return entries.map(function (entry) {
-            return srcs_1.reduce(function (result, src) {
-                return result || entry.match(path.join(base, src), function (match) {
-                    return entry.withDest(path.join(dest[src], match));
-                });
-            }, null) || entry;
+var extGlob = function (src, input, task) {
+    var base = input.base || task.base || '';
+    var dest = input.dest || task.dest || '';
+    var ignore = input.ignore instanceof Array ? input.ignore : (input.ignore && [input.ignore]);
+    return new Promise(function (res) {
+        var results = [];
+        var glob = new glob_1.Glob(src, { ignore: ignore, nodir: true, cwd: base });
+        glob.on('match', function (p) {
+            var src = path.join(base, p);
+            var entry = new Entry_1.default({ src: src, dest: p });
+            if (dest) {
+                entry = util_2.isString(dest) ? entry.inDest(dest) : entry.withDest({ dest: dest, base: base });
+            }
+            results.push(entry);
+        })
+            .on('end', function () {
+            res(results.sort(function (a, b) { return a.src < b.src ? -1 : 1; }));
         });
-    }
-}
+    });
+};
 function resolvePath(src, input, task) {
     if (task) {
-        var _loop_1 = function (i) {
-            var resolver_1 = pathResolvers[i];
-            var res = resolver_1(src, input, task);
-            if (res) {
-                var dest_1 = input.dest || task.dest;
-                var base_1 = input.base || task.base;
-                return { value: Promise.resolve(res)
-                        .then(function (res) { return Promise.all(res); })
-                        .then(function (res) { return res.reduce(function (entries, data) {
-                        return entries.concat(mapToDestination(createEntries(data), base_1, dest_1));
-                    }, []); })
-                        .catch(function (err) {
-                        throw new Error("Error in task " + task.fullName + ".input : " + err + " \n " + err.stack);
-                    }) };
-            }
-        };
-        for (var i in pathResolvers) {
-            var state_1 = _loop_1(i);
-            if (typeof state_1 === "object")
-                return state_1.value;
+        var p = void 0;
+        if (src.startsWith('http')) {
+            p = task.runner.cache.persistSource(src, function () { return request(src, { encoding: null }); }).then(function (cachePath) { return resolvePath(cachePath, input, task); });
         }
+        else {
+            p = extGlob(src, input, task);
+        }
+        return p.catch(function (err) {
+            throw new Error("Error in task " + task.fullName + ".input : " + err + " \n " + err.stack);
+        });
     }
     return Promise.resolve([]);
 }
