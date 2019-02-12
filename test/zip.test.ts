@@ -1,16 +1,12 @@
 import {run, Runner, Zip, Entry} from '../src';
 import * as path from 'path';
 import { ZipEntry } from '../src/Zip';
+import { debug } from 'util';
 
 describe('zip', () => {
 
     it('auto-create-zip', done => {
 
-        const res: string[] = [];
-        function push(letter: string) {
-            res.push(letter);
-            return letter;
-        }
 
         const tasks = {
             name: 'zip',
@@ -88,6 +84,26 @@ describe('zip', () => {
         expect(zip.withInputMapping(map).entries[0].dest).toBe('dest/myFile.txt');
 
     });
+
+    // it('zip-caching', done => {
+
+    //     const task = {
+    //         input: path.join(__dirname, 'assets', '*.zip')
+    //     };
+
+    //     run({
+    //         tasks: [
+    //             task,
+    //             task
+    //         ]
+    //     }).then((runner: Runner) => {
+
+    //         debugger
+    //         expect(runner.entries.task1[0]).toBeInstanceOf(ZipEntry);
+    //         done();
+    //     })
+
+    // });
 
     it('with-match-mapping', () => {
 

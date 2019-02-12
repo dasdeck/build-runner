@@ -1,7 +1,7 @@
 import * as glob from 'glob';
 import * as path from 'path';
 import * as request from 'request-promise-native';
-import {resolver, map, md5, walkDirSync} from './util';
+import {resolver, map} from './util';
 import Entry from './Entry';
 import Task from './Task';
 import {GenericObject, TaskFactory, TaskLike, EntrySet, PromisedEntries, PromisedEntryResult, Input, InputLike, EntryResult, TaskInterface, EntryLike, LoggerConfig} from './interface';
@@ -65,7 +65,6 @@ const pathResolvers = [
     (src: string, input: Input, task: Task): Promise<EntryResult[]> | void => {
 
         if (src.startsWith('http')) {
-
             return task.runner.cache.persistSource(src, () => request(src, {encoding: null}))
                 .then(files => files.map((src:string) => ({src})));
         }

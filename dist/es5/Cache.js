@@ -11,11 +11,14 @@ var Cache = /** @class */ (function () {
         this.data = {};
         this.config = config;
     }
+    Cache.prototype.clear = function () {
+        fs.removeSync(this.dir);
+    };
     Cache.prototype.persistSource = function (src, getter) {
         var _this = this;
         var cachedValue = this.get(src);
         if (typeof cachedValue === 'undefined') {
-            return Promise.resolve(getter()).then(function (content) { return _this.write(src, content); }).then(function () { return _this.get(src) || []; });
+            return Promise.resolve(getter && getter()).then(function (content) { return _this.write(src, content); }).then(function () { return _this.get(src) || []; });
         }
         else {
             return Promise.resolve(cachedValue);
@@ -61,6 +64,9 @@ var Cache = /** @class */ (function () {
     };
     Cache.prototype.write = function (src, content) {
         var cache = this.getCachePathFor(src);
+        if (util_2.isUndefined(content)) {
+            content = fs.readFileSync(src);
+        }
         if (src.endsWith('.zip')) {
             new _1.Zip({ content: content }).extractAllTo(cache);
         }

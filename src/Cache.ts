@@ -17,11 +17,15 @@ export default class Cache {
         this.config = config;
     }
 
-    persistSource(src: string, getter: Function): Promise<string[]> {
+    clear() {
+        fs.removeSync(this.dir);
+    }
+
+    persistSource(src: string, getter?: Function): Promise<string[]> {
         const cachedValue = this.get(src);
 
         if (typeof cachedValue === 'undefined') {
-            return Promise.resolve(getter()).then(content => this.write(src, content)).then(() => this.get(src) || []);
+            return Promise.resolve(getter && getter()).then(content => this.write(src, content)).then(() => this.get(src) || []);
         } else {
             return Promise.resolve(cachedValue);
         }
@@ -69,9 +73,14 @@ export default class Cache {
         return path.join(this.dir, md5(src));
     }
 
-    write(src: string, content: Content) {
+    write(src: string, content?: Content) {
 
         const cache = this.getCachePathFor(src);
+
+        if (isUndefined(content)) {
+            content = fs.readFileSync(src);
+        }
+
         if(src.endsWith('.zip')) {
             new Zip({content}).extractAllTo(cache);
         } else {

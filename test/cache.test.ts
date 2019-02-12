@@ -1,8 +1,19 @@
 import Cache from '../src/Cache';
 import {run, Runner} from '../src';
+import * as fs from 'fs';
 
 
 describe('cache', () => {
+
+
+    afterAll(() => {
+
+        const cache = new Cache;
+        cache.clear();
+        expect(fs.existsSync(cache.dir)).toBeFalsy();
+
+    });
+
 
     /**
      * lazy load a file's content
